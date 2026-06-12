@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MR - CHATTING | Blackpink Edition</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -36,6 +36,7 @@
             background-color: var(--bg-main);
             color: var(--text-main);
             height: 100vh;
+            height: -webkit-fill-available; /* Mobile iOS view fix */
             overflow: hidden;
             display: flex;
             align-items: center;
@@ -129,7 +130,7 @@
         .app-container {
             display: flex;
             width: 100vw;
-            height: 100vh;
+            height: 100%;
             background-color: var(--bg-main);
         }
 
@@ -257,6 +258,7 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            height: 100%;
         }
 
         .welcome-screen {
@@ -284,6 +286,7 @@
             display: flex;
             flex-direction: column;
             height: 100%;
+            position: relative;
         }
 
         .chat-header {
@@ -293,6 +296,7 @@
             display: flex;
             align-items: center;
             gap: 15px;
+            flex-shrink: 0;
         }
 
         .messages-container {
@@ -304,6 +308,7 @@
             gap: 15px;
             background-image: radial-gradient(rgba(255, 0, 127, 0.03) 1px, transparent 0);
             background-size: 24px 24px;
+            -webkit-overflow-scrolling: touch;
         }
 
         .msg-row { display: flex; width: 100%; }
@@ -341,6 +346,7 @@
             display: block;
         }
 
+        /* Keyboard Responsive Input Wrapper */
         .message-input-area {
             padding: 20px;
             background: var(--bg-sidebar);
@@ -348,6 +354,8 @@
             display: flex;
             gap: 15px;
             align-items: center;
+            flex-shrink: 0;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom)); /* iOS safe boundary handle */
         }
 
         .message-input-area input {
@@ -516,7 +524,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // DOM Elements
+        // DOM Element Mapping
         const authContainer = document.getElementById("auth-container");
         const appContainer = document.getElementById("app-container");
         const appSidebar = document.getElementById("app-sidebar");
@@ -558,7 +566,7 @@
             return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
         }
 
-        // Toggle Login / Register
+        // Toggle Logic Fix
         document.addEventListener("click", function(e) {
             if(e.target && e.target.id === 'auth-toggle-link'){
                 isLoginMode = !isLoginMode;
@@ -583,7 +591,7 @@
             try {
                 if (isLoginMode) {
                     await signInWithEmailAndPassword(auth, email, password);
-                    showToast("Workspace authorized successfully!");
+                    showToast("Workspace authorized!");
                 } else {
                     if(!username) { alert("Please input a valid username."); return; }
                     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -637,7 +645,7 @@
             });
         }
 
-        // Module Controller to Window Object mapping (গ্লোবাল স্কোপ সমাধান)
+        // Global Mount Fixes
         function switchTab(tabName) {
             activeTab = tabName;
             tabChats.classList.remove("active");
@@ -671,7 +679,7 @@
                 activeChatsList.innerHTML = "";
                 
                 if (snapshot.empty) {
-                    activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No active connections. Add friends to start chatting!</p>`;
+                    activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No active connections. Go to All Users to connect!</p>`;
                     return;
                 }
 
@@ -683,7 +691,6 @@
 
                 for (let fData of friendshipsList) {
                     const targetUid = fData.user1 === currentUser.uid ? fData.user2 : fData.user1;
-                    
                     if (renderedUserIds.has(targetUid)) continue;
                     renderedUserIds.add(targetUid);
 
@@ -696,7 +703,7 @@
         }
 
         async function loadGlobalUsersExplore() {
-            activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">Scanning workspace...</p>`;
+            activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">Syncing workspace database...</p>`;
             
             const reqSnap = await getDocs(collection(db, "friend_requests"));
             const activeRelations = new Map(); 
@@ -744,7 +751,7 @@
                 }
             });
 
-            if(count === 0) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No other users available</p>`;
+            if(count === 0) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No users found.</p>`;
         }
 
         function loadIncomingRequestsStream() {
@@ -754,7 +761,7 @@
                 activeChatsList.innerHTML = "";
 
                 if(snap.empty) {
-                    activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No pending incoming requests.</p>`;
+                    activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No incoming requests.</p>`;
                     return;
                 }
 
@@ -775,7 +782,6 @@
             });
         }
 
-        // Window Object Global Triggers (onclick অ্যাক্সেস ফিক্স)
         window.sendFriendRequest = async function(targetUid) {
             try {
                 const reqId = `${currentUser.uid}_${targetUid}`;
@@ -785,7 +791,7 @@
                     status: "pending",
                     timestamp: new Date().getTime()
                 });
-                showToast("Friend request transmitted!");
+                showToast("Request sent!");
                 loadGlobalUsersExplore();
             } catch(e) { alert(e.message); }
         };
@@ -800,8 +806,7 @@
                     lastMessage: "Connection established! Say hi.",
                     timestamp: new Date().getTime()
                 });
-
-                showToast("Connection initialized successfully!");
+                showToast("Connection initialized!");
                 switchTab("chats");
             } catch(e) { alert(e.message); }
         };
@@ -814,32 +819,7 @@
             } catch(e) { alert(e.message); }
         };
 
-        window.openChatWindowWithTargetUser = openChatWindowWithTargetUser;
-
-        function renderUserRow(userData, subtext, type, actionHTML = "") {
-            const li = document.createElement("li");
-            li.innerHTML = `
-                <div class="user-item-info">
-                    <div class="user-core">
-                        <div style="position:relative;">
-                            <img src="${userData.photoURL || 'https://via.placeholder.com/40'}" class="avatar">
-                            <span style="position:absolute; bottom:0; right:0; width:10px; height:10px; border-radius:50%; background:${userData.status === 'online' ? 'var(--pink-primary)' : '#555'}; border:2px solid var(--bg-sidebar);"></span>
-                        </div>
-                        <div style="display:flex; flex-direction:column;">
-                            <span class="name">${userData.username}</span>
-                            <span class="subtext">${subtext}</span>
-                        </div>
-                    </div>
-                    <div class="user-action-side">${type === 'action' ? actionHTML : ''}</div>
-                </div>
-            `;
-            if(type === "chat_click") {
-                li.style.cursor = "pointer";
-                li.addEventListener("click", () => openChatWindowWithTargetUser(userData.uid));
-            }
-            activeChatsList.appendChild(li);
-        }
-
+        // Complete Global Function Bridging (মডিউল বাউন্ডিং ফিক্স)
         async function openChatWindowWithTargetUser(targetUid) {
             activeChatUserId = targetUid;
             appSidebar.classList.add("mobile-hidden");
@@ -870,7 +850,6 @@
             unsubscribeMessagesSub = onSnapshot(collection(doc(db, "friendships", targetRoomId), "chat_messages"), (snapshot) => {
                 let combinedList = [];
                 snapshot.forEach(doc => combinedList.push({ id: doc.id, ...doc.data() }));
-                
                 combinedList.sort((a, b) => (a.timestamp || 0) - (a.timestamp || 0));
 
                 messagesDisplay.innerHTML = "";
@@ -878,6 +857,75 @@
                 messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
             });
         }
+        window.openChatWindowWithTargetUser = openChatWindowWithTargetUser;
+
+        function renderUserRow(userData, subtext, type, actionHTML = "") {
+            const li = document.createElement("li");
+            li.innerHTML = `
+                <div class="user-item-info">
+                    <div class="user-core">
+                        <div style="position:relative;">
+                            <img src="${userData.photoURL || 'https://via.placeholder.com/40'}" class="avatar">
+                            <span style="position:absolute; bottom:0; right:0; width:10px; height:10px; border-radius:50%; background:${userData.status === 'online' ? 'var(--pink-primary)' : '#555'}; border:2px solid var(--bg-sidebar);"></span>
+                        </div>
+                        <div style="display:flex; flex-direction:column;">
+                            <span class="name">${userData.username}</span>
+                            <span class="subtext">${subtext}</span>
+                        </div>
+                    </div>
+                    <div class="user-action-side">${type === 'action' ? actionHTML : ''}</div>
+                </div>
+            `;
+            if(type === "chat_click") {
+                li.style.cursor = "pointer";
+                li.addEventListener("click", () => window.openChatWindowWithTargetUser(userData.uid));
+            }
+            activeChatsList.appendChild(li);
+        }
+
+        // Typing Indicator Triggers
+        messageInput.addEventListener("input", async () => {
+            if (!currentUser || !activeChatUserId) return;
+            try {
+                await updateDoc(doc(db, "users", currentUser.uid), { isTypingTo: activeChatUserId });
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(async () => {
+                    await updateDoc(doc(db, "users", currentUser.uid), { isTypingTo: null });
+                }, 2000);
+            } catch (err) { console.error(err); }
+        });
+
+        // Message Transmitter Core Engine
+        messageForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const txt = messageInput.value.trim();
+            if (!txt || !activeChatUserId) return;
+
+            messageInput.value = "";
+            clearTimeout(typingTimeout);
+            try { await updateDoc(doc(db, "users", currentUser.uid), { isTypingTo: null }); } catch(err){}
+
+            const currentTimestamp = new Date().getTime();
+            const roomId = getChatRoomId(currentUser.uid, activeChatUserId);
+
+            try {
+                const chatRoomRef = doc(db, "friendships", roomId);
+                await addDoc(collection(chatRoomRef, "chat_messages"), {
+                    senderId: currentUser.uid,
+                    receiverId: activeChatUserId,
+                    text: txt,
+                    timestamp: currentTimestamp
+                });
+
+                await setDoc(chatRoomRef, {
+                    user1: currentUser.uid < activeChatUserId ? currentUser.uid : activeChatUserId,
+                    user2: currentUser.uid < activeChatUserId ? activeChatUserId : currentUser.uid,
+                    lastMessage: txt,
+                    timestamp: currentTimestamp
+                }, { merge: true });
+
+            } catch(err) { console.error("Database block error: ", err); }
+        });
 
         function renderSingleMessageBubble(msgData) {
             const isSent = msgData.senderId === currentUser.uid;
@@ -898,56 +946,20 @@
             messagesDisplay.appendChild(row);
         }
 
-        messageInput.addEventListener("input", async () => {
-            if (!currentUser || !activeChatUserId) return;
-
-            try {
-                await updateDoc(doc(db, "users", currentUser.uid), {
-                    isTypingTo: activeChatUserId
-                });
-
-                clearTimeout(typingTimeout);
-                typingTimeout = setTimeout(async () => {
-                    await updateDoc(doc(db, "users", currentUser.uid), {
-                        isTypingTo: null
-                    });
-                }, 3000);
-
-            } catch (err) { console.error("Typing state error: ", err); }
-        });
-
-        messageForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const txt = messageInput.value.trim();
-            if (!txt || !activeChatUserId) return;
-
-            messageInput.value = "";
-            
-            clearTimeout(typingTimeout);
-            try { await updateDoc(doc(db, "users", currentUser.uid), { isTypingTo: null }); } catch(err){}
-
-            const currentTimestamp = new Date().getTime();
-            const roomId = getChatRoomId(currentUser.uid, activeChatUserId);
-
-            try {
-                const chatRoomRef = doc(db, "friendships", roomId);
+        // Kinetic Viewport Keyboard Auto-Scroller
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                const currentViewHeight = window.visualViewport.height;
+                document.body.style.height = `${currentViewHeight}px`;
                 
-                await addDoc(collection(chatRoomRef, "chat_messages"), {
-                    senderId: currentUser.uid,
-                    receiverId: activeChatUserId,
-                    text: txt,
-                    timestamp: currentTimestamp
-                });
-
-                await setDoc(chatRoomRef, {
-                    user1: currentUser.uid < activeChatUserId ? currentUser.uid : activeChatUserId,
-                    user2: currentUser.uid < activeChatUserId ? activeChatUserId : currentUser.uid,
-                    lastMessage: txt,
-                    timestamp: currentTimestamp
-                }, { merge: true });
-
-            } catch(err) { console.error("Message Processing Blocked: ", err); }
-        });
+                // Active Chat autoscroll down on resize toggle
+                if(activeChatUserId) {
+                    setTimeout(() => {
+                        messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
+                    }, 100);
+                }
+            });
+        }
 
         if(backToSidebar) {
             backToSidebar.addEventListener("click", () => {
@@ -955,6 +967,7 @@
                 chatWindowView.classList.remove("mobile-active");
                 activeChatView.classList.add("hidden");
                 welcomeView.classList.remove("hidden");
+                activeChatUserId = null;
             });
         }
 
@@ -973,7 +986,7 @@
                     renderUserRow(u, `@${u.username}`, "action", `<button class="action-btn-sm btn-pink" onclick="window.openChatWindowWithTargetUser('${u.uid}')">Message</button>`);
                 }
             });
-            if(!found) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No users found via input query.</p>`;
+            if(!found) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No users matched.</p>`;
         });
 
         function showToast(msg) {
@@ -981,7 +994,7 @@
             if(toast) {
                 toast.innerText = msg;
                 toast.classList.remove("hidden");
-                setTimeout(() => toast.classList.add("hidden"), 3500);
+                setTimeout(() => toast.classList.add("hidden"), 3000);
             }
         }
 

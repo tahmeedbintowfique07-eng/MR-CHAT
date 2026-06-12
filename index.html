@@ -36,7 +36,6 @@
             background-color: var(--bg-main);
             color: var(--text-main);
             height: 100vh;
-            height: -webkit-fill-available; /* Mobile iOS view fix */
             overflow: hidden;
             display: flex;
             align-items: center;
@@ -130,8 +129,13 @@
         .app-container {
             display: flex;
             width: 100vw;
-            height: 100%;
+            height: 100vh;
             background-color: var(--bg-main);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
         }
 
         .sidebar {
@@ -346,7 +350,7 @@
             display: block;
         }
 
-        /* Keyboard Responsive Input Wrapper */
+        /* Keyboard Responsive Input Area */
         .message-input-area {
             padding: 20px;
             background: var(--bg-sidebar);
@@ -355,7 +359,6 @@
             gap: 15px;
             align-items: center;
             flex-shrink: 0;
-            padding-bottom: calc(20px + env(safe-area-inset-bottom)); /* iOS safe boundary handle */
         }
 
         .message-input-area input {
@@ -645,7 +648,6 @@
             });
         }
 
-        // Global Mount Fixes
         function switchTab(tabName) {
             activeTab = tabName;
             tabChats.classList.remove("active");
@@ -819,7 +821,6 @@
             } catch(e) { alert(e.message); }
         };
 
-        // Complete Global Function Bridging (মডিউল বাউন্ডিং ফিক্স)
         async function openChatWindowWithTargetUser(targetUid) {
             activeChatUserId = targetUid;
             appSidebar.classList.add("mobile-hidden");
@@ -883,7 +884,6 @@
             activeChatsList.appendChild(li);
         }
 
-        // Typing Indicator Triggers
         messageInput.addEventListener("input", async () => {
             if (!currentUser || !activeChatUserId) return;
             try {
@@ -895,7 +895,6 @@
             } catch (err) { console.error(err); }
         });
 
-        // Message Transmitter Core Engine
         messageForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const txt = messageInput.value.trim();
@@ -946,17 +945,26 @@
             messagesDisplay.appendChild(row);
         }
 
-        // Kinetic Viewport Keyboard Auto-Scroller
+        // 📱 কিবোর্ড ট্র্যাকিং মেকানিজম (VisualViewport API + CSS Absolute Mapping)
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
-                const currentViewHeight = window.visualViewport.height;
-                document.body.style.height = `${currentViewHeight}px`;
-                
-                // Active Chat autoscroll down on resize toggle
+                const appContainerEl = document.getElementById("app-container");
+                if (appContainerEl) {
+                    // ভিউপোর্টের রিয়েল-টাইম হাইট সেট করে পুরো কন্টেইনারকে কিবোর্ডের উপরে লক করে দেওয়া হচ্ছে
+                    appContainerEl.style.height = `${window.visualViewport.height}px`;
+                    appContainerEl.style.top = `${window.visualViewport.offsetTop}px`;
+                }
                 if(activeChatUserId) {
                     setTimeout(() => {
                         messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
-                    }, 100);
+                    }, 80);
+                }
+            });
+            
+            window.visualViewport.addEventListener('scroll', () => {
+                const appContainerEl = document.getElementById("app-container");
+                if (appContainerEl) {
+                    appContainerEl.style.top = `${window.visualViewport.offsetTop}px`;
                 }
             });
         }
@@ -986,7 +994,7 @@
                     renderUserRow(u, `@${u.username}`, "action", `<button class="action-btn-sm btn-pink" onclick="window.openChatWindowWithTargetUser('${u.uid}')">Message</button>`);
                 }
             });
-            if(!found) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No users matched.</p>`;
+            if(!found) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No users found via input query.</p>`;
         });
 
         function showToast(msg) {
@@ -994,7 +1002,7 @@
             if(toast) {
                 toast.innerText = msg;
                 toast.classList.remove("hidden");
-                setTimeout(() => toast.classList.add("hidden"), 3000);
+                setTimeout(() => toast.classList.add("hidden"), 3500);
             }
         }
 

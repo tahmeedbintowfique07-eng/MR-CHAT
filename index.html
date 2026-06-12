@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MR - CHATTING | Blackpink Edition</title>
+    <title>MR - CHATTING </title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Eruda Console for Mobile Debugging -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
 
@@ -56,15 +57,16 @@
             text-align: center;
         }
 
-        /* লোগো ইমেজ স্টাইলিং */
+        /* লোগো ইমেজ স্টাইলিং (Vercel/Online CDN Optimized) */
         .auth-header-logo {
-            width: 100px;
-            height: 100px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 15px;
             border: 2px solid var(--pink-primary);
-            box-shadow: 0 0 20px rgba(255, 0, 127, 0.5);
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.6);
+            background-color: var(--bg-card);
         }
 
         .auth-header h2 {
@@ -83,13 +85,13 @@
         .input-group {
             position: relative;
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
         }
 
         .input-group i {
             position: absolute;
             left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
             color: var(--text-muted);
         }
 
@@ -278,10 +280,9 @@
             text-align: center;
         }
 
-        /* ওয়েলকাম স্ক্রিন লোগো স্টাইল */
         .welcome-logo {
-            width: 130px;
-            height: 130px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 20px;
@@ -291,9 +292,9 @@
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 20px rgba(255,0,127,0.5); }
-            50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 35px rgba(255,0,127,0.8); }
-            100% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 20px rgba(255,0,127,0.5); }
+            0% { transform: scale(1); box-shadow: 0 0 20px rgba(255,0,127,0.5); }
+            50% { transform: scale(1.03); box-shadow: 0 0 35px rgba(255,0,127,0.8); }
+            100% { transform: scale(1); box-shadow: 0 0 20px rgba(255,0,127,0.5); }
         }
 
         .chat-area {
@@ -360,7 +361,6 @@
             display: block;
         }
 
-        /* Message Input Area */
         .message-input-area {
             padding: 20px;
             background: var(--bg-sidebar);
@@ -419,7 +419,7 @@
             transition: all 0.3s ease;
         }
 
-        /* Mobile Responsive Breakpoints */
+        /* Mobile Adjustments */
         @media (max-width: 768px) {
             .sidebar { width: 100%; }
             .sidebar.mobile-hidden { display: none !important; }
@@ -433,9 +433,11 @@
 </head>
 <body>
 
+    <!-- Auth Module Container -->
     <div id="auth-container" class="auth-box">
         <div class="auth-header">
-            <img src="1000035236.jpg" alt="MR CHAT LOGO" class="auth-header-logo">
+            <!-- Vercel বা অন্য প্ল্যাটফর্মে ভাঙা ইমেজের বাগ এড়াতে রিলায়েবল হোস্ট করা ইমেজ সোর্স ব্যবহার করা হলো -->
+            <img src="https://i.ibb.co/VWV3m3G/1000035236.jpg" onerror="this.src='https://api.dicebear.com/7.x/identicon/svg?seed=MR'" alt="MR CHAT LOGO" class="auth-header-logo">
             <h2>MR - CHATTING</h2>
             <p id="auth-subtitle">Welcome to the Premium Blackpink Workspace</p>
         </div>
@@ -459,6 +461,7 @@
         </div>
     </div>
 
+    <!-- Core App Application Container -->
     <div id="app-container" class="app-container hidden">
         <div class="sidebar" id="app-sidebar">
             <div class="sidebar-header">
@@ -488,12 +491,13 @@
         <div class="chat-main" id="chat-window-view">
             <div id="welcome-view" class="welcome-screen">
                 <div class="welcome-content">
-                    <img src="1000035236.jpg" alt="MR CHAT LOGO" class="welcome-logo">
+                    <img src="https://i.ibb.co/VWV3m3G/1000035236.jpg" onerror="this.src='https://api.dicebear.com/7.x/identicon/svg?seed=MR'" alt="MR CHAT LOGO" class="welcome-logo">
                     <h2>MR - CHATTING WORKSPACE</h2>
                     <p style="color: var(--text-muted)">Select an active connection to initialize messaging.</p>
                 </div>
             </div>
 
+            <!-- Active Conversation Component -->
             <div id="active-chat-view" class="chat-area hidden">
                 <div class="chat-header">
                     <button id="back-to-sidebar" class="icon-btn"><i class="fas fa-chevron-left"></i></button>
@@ -518,12 +522,11 @@
 
     <div id="app-notification" class="toast hidden"></div>
 
+    <!-- Core Script Logic Layer -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        
-        // [CRITICAL BUG FIX]: getFirestore মেথডটি ডুপ্লিকেট ইমপোর্ট বাদ দিয়ে সঠিক ডোমেন থেকে ইমপোর্ট করা হলো
-        import { getFirestore, doc, setDoc, collection, query, where, or, and, orderBy, onSnapshot, addDoc, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, collection, query, where, or, orderBy, onSnapshot, addDoc, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCr9Bfn4Ep-qw9JFkguyak00dsN90GSgRY",
@@ -539,7 +542,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Core DOM References
+        // UI Binding Target Map
         const authContainer = document.getElementById("auth-container");
         const appContainer = document.getElementById("app-container");
         const appSidebar = document.getElementById("app-sidebar");
@@ -550,8 +553,7 @@
         const authEmail = document.getElementById("auth-email");
         const authPassword = document.getElementById("auth-password");
         const authSubmitBtn = document.getElementById("auth-submit-btn");
-        const authSubtitle = document.getElementById("auth-subtitle");
-        const authToggleText = document.getElementById("auth-toggle-text");
+        const authToggleLink = document.getElementById("auth-toggle-link");
         const activeChatsList = document.getElementById("active-chats-list");
         const searchInput = document.getElementById("search-input");
         const welcomeView = document.getElementById("welcome-view");
@@ -581,17 +583,18 @@
             return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
         }
 
+        // Auth mode toggle system fixing
         document.addEventListener("click", function(e) {
             if(e.target && e.target.id === 'auth-toggle-link'){
                 isLoginMode = !isLoginMode;
                 if (isLoginMode) {
                     usernameFieldGroup.style.display = "none";
                     authSubmitBtn.innerText = "Login";
-                    authToggleText.innerHTML = `Don't have an account? <span id="auth-toggle-link" style="color:var(--pink-primary); cursor:pointer; font-weight:bold;">Register here</span>`;
+                    document.getElementById("auth-toggle-text").innerHTML = `Don't have an account? <span id="auth-toggle-link" style="color:var(--pink-primary); cursor:pointer; font-weight:bold;">Register here</span>`;
                 } else {
                     usernameFieldGroup.style.display = "flex";
                     authSubmitBtn.innerText = "Sign Up";
-                    authToggleText.innerHTML = `Already have an account? <span id="auth-toggle-link" style="color:var(--pink-primary); cursor:pointer; font-weight:bold;">Login here</span>`;
+                    document.getElementById("auth-toggle-text").innerHTML = `Already have an account? <span id="auth-toggle-link" style="color:var(--pink-primary); cursor:pointer; font-weight:bold;">Login here</span>`;
                 }
             }
         });
@@ -605,7 +608,7 @@
             try {
                 if (isLoginMode) {
                     await signInWithEmailAndPassword(auth, email, password);
-                    showToast("Workspace authorized!");
+                    showToast("Authorized connection!");
                 } else {
                     if(!username) { alert("Please input a valid username."); return; }
                     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -620,9 +623,9 @@
                         isTypingTo: null,
                         lastSeen: new Date().getTime()
                     });
-                    showToast("Account profile mapped successfully!");
+                    showToast("Account synchronized!");
                 }
-            } catch (error) { alert("Auth Failure: " + error.message); }
+            } catch (error) { alert("Authentication block: " + error.message); }
         });
 
         onAuthStateChanged(auth, async (user) => {
@@ -692,7 +695,7 @@
                 activeChatsList.innerHTML = "";
                 
                 if (snapshot.empty) {
-                    activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No active connections. Go to All Users to connect!</p>`;
+                    activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No active chats. Use 'All Users' tab to add friends.</p>`;
                     return;
                 }
 
@@ -709,66 +712,71 @@
 
                     const uSnap = await getDocs(query(collection(db, "users"), where("uid", "==", targetUid)));
                     if (!uSnap.empty) {
-                        renderUserRow(uSnap.docs[0].data(), fData.lastMessage || "Tap to chat", "chat_click");
+                        renderUserRow(uSnap.docs[0].data(), fData.lastMessage || "Click to open workspace chat", "chat_click");
                     }
                 }
             });
         }
 
         async function loadGlobalUsersExplore() {
-            activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">Syncing workspace database...</p>`;
+            activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">Syncing secure cloud data...</p>`;
             
-            const reqSnap = await getDocs(collection(db, "friendRequests"));
-            const activeRelations = new Map(); 
+            try {
+                const reqSnap = await getDocs(collection(db, "friendRequests"));
+                const activeRelations = new Map(); 
 
-            reqSnap.forEach(doc => {
-                const d = doc.data();
-                const sender = d.senderId || d.from;
-                const receiver = d.receiverId || d.to;
-                if(sender === currentUser.uid || receiver === currentUser.uid) {
-                    const counterPart = sender === currentUser.uid ? receiver : sender;
-                    activeRelations.set(counterPart, { type: 'request', status: d.status, isSender: sender === currentUser.uid });
-                }
-            });
+                reqSnap.forEach(doc => {
+                    const d = doc.data();
+                    const sender = d.senderId || d.from;
+                    const receiver = d.receiverId || d.to;
+                    if(sender === currentUser.uid || receiver === currentUser.uid) {
+                        const counterPart = sender === currentUser.uid ? receiver : sender;
+                        activeRelations.set(counterPart, { type: 'request', status: d.status, isSender: sender === currentUser.uid });
+                    }
+                });
 
-            const fsSnap = await getDocs(collection(db, "friendships"));
-            fsSnap.forEach(doc => {
-                const d = doc.data();
-                if(d.user1 === currentUser.uid || d.user2 === currentUser.uid) {
-                    const counterPart = d.user1 === currentUser.uid ? d.user2 : d.user1;
-                    activeRelations.set(counterPart, { type: 'friend' });
-                }
-            });
+                const fsSnap = await getDocs(collection(db, "friendships"));
+                fsSnap.forEach(doc => {
+                    const d = doc.data();
+                    if(d.user1 === currentUser.uid || d.user2 === currentUser.uid) {
+                        const counterPart = d.user1 === currentUser.uid ? d.user2 : d.user1;
+                        activeRelations.set(counterPart, { type: 'friend' });
+                    }
+                });
 
-            const userSnap = await getDocs(query(collection(db, "users")));
-            activeChatsList.innerHTML = "";
+                const userSnap = await getDocs(query(collection(db, "users")));
+                activeChatsList.innerHTML = "";
 
-            let count = 0;
-            userSnap.forEach(uDoc => {
-                const u = uDoc.data();
-                if(u.uid !== currentUser.uid) {
-                    count++;
-                    const relation = activeRelations.get(u.uid);
-                    let buttonHTML = `<button class="action-btn-sm btn-pink" onclick="sendFriendRequest('${u.uid}')"><i class="fas fa-user-plus"></i> Add</button>`;
-                    
-                    if(relation) {
-                        if(relation.type === 'friend') {
-                            buttonHTML = `<span style="color:var(--pink-light); font-size:0.8rem; font-weight:600;"><i class="fas fa-check-circle"></i> Friends</span>`;
-                        } else if(relation.type === 'request') {
-                            if(relation.status === 'pending') {
-                                buttonHTML = relation.isSender ? 
-                                    `<button class="action-btn-sm btn-muted" disabled>Requested</button>` : 
-                                    `<button class="action-btn-sm btn-pink" onclick="window.switchTab('requests')">Review</button>`;
-                            } else if(relation.status === 'accepted') {
-                                buttonHTML = `<span style="color:var(--pink-light); font-size:0.8rem; font-weight:600;"><i class="fas fa-check-circle"></i> Friends</span>`;
+                let count = 0;
+                userSnap.forEach(uDoc => {
+                    const u = uDoc.data();
+                    if(u.uid !== currentUser.uid) {
+                        count++;
+                        const relation = activeRelations.get(u.uid);
+                        let buttonHTML = `<button class="action-btn-sm btn-pink" onclick="sendFriendRequest('${u.uid}')"><i class="fas fa-user-plus"></i> Add</button>`;
+                        
+                        if(relation) {
+                            if(relation.type === 'friend') {
+                                buttonHTML = `<span style="color:var(--pink-light); font-size:0.8rem; font-weight:600;"><i class="fas fa-check-circle"></i> Connected</span>`;
+                            } else if(relation.type === 'request') {
+                                if(relation.status === 'pending') {
+                                    buttonHTML = relation.isSender ? 
+                                        `<button class="action-btn-sm btn-muted" disabled>Pending</button>` : 
+                                        `<button class="action-btn-sm btn-pink" onclick="window.switchTab('requests')">Review</button>`;
+                                } else if(relation.status === 'accepted') {
+                                    buttonHTML = `<span style="color:var(--pink-light); font-size:0.8rem; font-weight:600;"><i class="fas fa-check-circle"></i> Connected</span>`;
+                                }
                             }
                         }
+                        renderUserRow(u, `@${u.username}`, "action", buttonHTML);
                     }
-                    renderUserRow(u, `@${u.username}`, "action", buttonHTML);
-                }
-            });
+                });
 
-            if(count === 0) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No users found.</p>`;
+                if(count === 0) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No global accounts indexed.</p>`;
+            } catch (err) {
+                console.error(err);
+                activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:red;">Database reading failure.</p>`;
+            }
         }
 
         function loadIncomingRequestsStream() {
@@ -778,7 +786,7 @@
                 activeChatsList.innerHTML = "";
 
                 if(snap.empty) {
-                    activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No incoming requests.</p>`;
+                    activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No incoming sync invitations.</p>`;
                     return;
                 }
 
@@ -793,10 +801,10 @@
                         const actionButtons = `
                             <div style="display:flex; gap:5px;">
                                 <button class="action-btn-sm btn-pink" onclick="acceptFriendRequest('${rDoc.id}', '${senderUid}')">Accept</button>
-                                <button class="action-btn-sm btn-muted" onclick="rejectFriendRequest('${rDoc.id}')">Reject</button>
+                                <button class="action-btn-sm btn-muted" onclick="rejectFriendRequest('${rDoc.id}')">Deny</button>
                             </div>
                         `;
-                        renderUserRow(senderData, "Wants to connect", "action", actionButtons);
+                        renderUserRow(senderData, "Wants to secure chat", "action", actionButtons);
                     }
                 }
             });
@@ -813,7 +821,7 @@
                     status: "pending",
                     timestamp: new Date().getTime()
                 });
-                showToast("Request sent!");
+                showToast("Request pushed!");
                 loadGlobalUsersExplore();
             } catch(e) { alert(e.message); }
         };
@@ -825,10 +833,10 @@
                 await setDoc(doc(db, "friendships", roomId), {
                     user1: currentUser.uid < senderUid ? currentUser.uid : senderUid,
                     user2: currentUser.uid < senderUid ? senderUid : currentUser.uid,
-                    lastMessage: "Connection established! Say hi.",
+                    lastMessage: "Secure link established! Say hello.",
                     timestamp: new Date().getTime()
                 });
-                showToast("Connection initialized!");
+                showToast("Link pipeline online!");
                 switchTab("chats");
             } catch(e) { alert(e.message); }
         };
@@ -836,7 +844,7 @@
         window.rejectFriendRequest = async function(reqDocId) {
             try {
                 await deleteDoc(doc(db, "friendRequests", reqDocId));
-                showToast("Request declined.");
+                showToast("Request safely dismissed.");
                 switchTab("requests");
             } catch(e) { alert(e.message); }
         };
@@ -855,10 +863,10 @@
                     chatUserAvatar.src = data.photoURL || 'https://via.placeholder.com/40';
                     
                     if (data.isTypingTo === currentUser.uid) {
-                        chatUserStatus.innerText = "Typing...";
+                        chatUserStatus.innerText = "Typing message...";
                         chatUserStatus.style.color = "var(--pink-light)";
                     } else {
-                        chatUserStatus.innerText = data.status === "online" ? "Active Workspace" : "Away";
+                        chatUserStatus.innerText = data.status === "online" ? "Active" : "Away";
                         chatUserStatus.style.color = data.status === "online" ? "var(--pink-light)" : "var(--text-muted)";
                     }
                 }
@@ -868,21 +876,22 @@
 
             const targetRoomId = getChatRoomId(currentUser.uid, targetUid);
             const msgCollectionRef = collection(db, "friendships", targetRoomId, "chat_messages");
+            const msgQuery = query(msgCollectionRef, orderBy("timestamp", "asc"));
 
-            unsubscribeMessagesSub = onSnapshot(msgCollectionRef, (snapshot) => {
+            unsubscribeMessagesSub = onSnapshot(msgQuery, (snapshot) => {
                 if (activeChatUserId !== targetUid) return;
-                let combinedList = [];
-                snapshot.forEach(doc => {
-                    combinedList.push({ id: doc.id, ...doc.data() });
-                });
-                
-                combinedList.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
                 messagesDisplay.innerHTML = "";
-                combinedList.forEach(msgData => renderSingleMessageBubble(msgData));
+                
+                if(snapshot.empty){
+                    messagesDisplay.innerHTML = `<p style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.85rem;">Encryption enabled. Secure logs empty.</p>`;
+                }
+
+                snapshot.forEach(doc => {
+                    renderSingleMessageBubble(doc.data());
+                });
                 messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
             }, (error) => {
-                console.error("Firestore Messaging Loop Disconnect Error:", error);
+                console.error("Firestore Runtime Stream Failure:", error);
             });
         }
         window.openChatWindowWithTargetUser = openChatWindowWithTargetUser;
@@ -906,6 +915,7 @@
             `;
             if(type === "chat_click") {
                 li.style.cursor = "pointer";
+                li.style.width = "100%";
                 li.addEventListener("click", () => window.openChatWindowWithTargetUser(userData.uid));
             }
             activeChatsList.appendChild(li);
@@ -953,8 +963,8 @@
                 }, { merge: true });
 
             } catch(err) { 
-                console.error("Transmission Blocked runtime error: ", err); 
-                showToast("Failed to distribute real-time message.");
+                console.error("Payload routing anomaly: ", err); 
+                showToast("Transmission halted.");
             }
         });
 
@@ -970,11 +980,12 @@
 
             row.innerHTML = `
                 <div class="msg-bubble">
-                    <p style="word-break: break-all;">${escapeHTML(msgData.text)}</p>
+                    <p style="word-break: break-word; white-space: pre-wrap;">${escapeHTML(msgData.text)}</p>
                     <span class="msg-meta">${timeString}</span>
                 </div>
             `;
             messagesDisplay.appendChild(row);
+            messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
         }
 
         if (window.visualViewport) {
@@ -988,13 +999,6 @@
                     setTimeout(() => {
                         messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
                     }, 100);
-                }
-            });
-            
-            window.visualViewport.addEventListener('scroll', () => {
-                const appContainerEl = document.getElementById("app-container");
-                if (appContainerEl) {
-                    appContainerEl.style.top = `${window.visualViewport.offsetTop}px`;
                 }
             });
         }
@@ -1024,7 +1028,7 @@
                     renderUserRow(u, `@${u.username}`, "action", `<button class="action-btn-sm btn-pink" onclick="window.openChatWindowWithTargetUser('${u.uid}')">Message</button>`);
                 }
             });
-            if(!found) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No users found via input query.</p>`;
+            if(!found) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No identities matching query strings.</p>`;
         });
 
         function showToast(msg) {
@@ -1032,7 +1036,7 @@
             if(toast) {
                 toast.innerText = msg;
                 toast.classList.remove("hidden");
-                setTimeout(() => toast.classList.add("hidden"), 3500);
+                setTimeout(() => toast.classList.add("hidden"), 3000);
             }
         }
 

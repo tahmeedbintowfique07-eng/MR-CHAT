@@ -129,7 +129,7 @@
         .app-container {
             display: flex;
             width: 100vw;
-            height: 100dvh; /* ডিভাইস রেসপন্সিভ হাইট ফিক্স */
+            height: 100dvh;
             background-color: var(--bg-main);
             position: fixed;
             top: 0;
@@ -424,7 +424,6 @@
 </head>
 <body>
 
-    <!-- Auth Module Container -->
     <div id="auth-container" class="auth-box">
         <div class="auth-header">
             <i class="fas fa-heart-pulse"></i>
@@ -451,7 +450,6 @@
         </div>
     </div>
 
-    <!-- Core App Application Container -->
     <div id="app-container" class="app-container hidden">
         <div class="sidebar" id="app-sidebar">
             <div class="sidebar-header">
@@ -487,7 +485,6 @@
                 </div>
             </div>
 
-            <!-- Active Conversation Component -->
             <div id="active-chat-view" class="chat-area hidden">
                 <div class="chat-header">
                     <button id="back-to-sidebar" class="icon-btn"><i class="fas fa-chevron-left"></i></button>
@@ -512,7 +509,6 @@
 
     <div id="app-notification" class="toast hidden"></div>
 
-    <!-- Core Logic Integration System -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -570,12 +566,10 @@
         let activeTab = "chats";
         let typingTimeout = null;
 
-        // Symmetric Room Generator 
         function getChatRoomId(uid1, uid2) {
             return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
         }
 
-        // Event-Delegation Binding for Login/Registration Mode Switches
         document.addEventListener("click", function(e) {
             if(e.target && e.target.id === 'auth-toggle-link'){
                 isLoginMode = !isLoginMode;
@@ -644,7 +638,6 @@
             });
         }
 
-        // [BUG FIX] CamelCase matching for 'friendRequests' collection
         function listenRequestBadge() {
             const qReq = query(collection(db, "friendRequests"), where("receiverId", "==", currentUser.uid), where("status", "==", "pending"));
             onSnapshot(qReq, (snap) => {
@@ -714,7 +707,6 @@
         async function loadGlobalUsersExplore() {
             activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">Syncing workspace database...</p>`;
             
-            // [BUG FIX] Database sync for camelCase mapping
             const reqSnap = await getDocs(collection(db, "friendRequests"));
             const activeRelations = new Map(); 
 
@@ -768,7 +760,6 @@
             if(count === 0) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No users found.</p>`;
         }
 
-        // [BUG FIX] Structural parameters aligned with friendRequests data maps
         function loadIncomingRequestsStream() {
             const qReq = query(collection(db, "friendRequests"), where("receiverId", "==", currentUser.uid), where("status", "==", "pending"));
             unsubscribeRealtimeStream = onSnapshot(qReq, async (snap) => {
@@ -839,7 +830,6 @@
             } catch(e) { alert(e.message); }
         };
 
-        // [BUG FIX] Streaming pipeline explicitly targeted down to chat_messages subcollections
         async function openChatWindowWithTargetUser(targetUid) {
             activeChatUserId = targetUid;
             appSidebar.classList.add("mobile-hidden");
@@ -875,7 +865,7 @@
                     combinedList.push({ id: doc.id, ...doc.data() });
                 });
                 
-                combinedList.sort((a, b) => (a.timestamp || 0) - (a.timestamp || 0));
+                combinedList.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
                 messagesDisplay.innerHTML = "";
                 combinedList.forEach(msgData => renderSingleMessageBubble(msgData));
@@ -921,7 +911,6 @@
             } catch (err) { console.error(err); }
         });
 
-        // [BUG FIX] Secure collection references structured clean out of local scopes
         messageForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const txt = messageInput.value.trim();
@@ -977,28 +966,38 @@
             messagesDisplay.appendChild(row);
         }
 
-        // 📱 [DEVICE/KEYBOARD FIX] Comprehensive Dynamic Engine tracking via visualViewport
+        /* 📱 ==================== [CRITICAL BROWSER KEYBOARD BUGS FIX CORE] ==================== */
         if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', () => {
+            const syncViewportLayout = () => {
                 const appContainerEl = document.getElementById("app-container");
                 if (appContainerEl) {
+                    // ডাইনামিক ভিউপোর্ট হাইট ট্র্যাক করে কন্টেইনার ফিক্স করা
                     appContainerEl.style.height = `${window.visualViewport.height}px`;
                     appContainerEl.style.top = `${window.visualViewport.offsetTop}px`;
                 }
-                if(activeChatUserId) {
-                    setTimeout(() => {
-                        messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
-                    }, 100);
+                if (activeChatUserId && messagesDisplay) {
+                    messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
                 }
-            });
-            
-            window.visualViewport.addEventListener('scroll', () => {
-                const appContainerEl = document.getElementById("app-container");
-                if (appContainerEl) {
-                    appContainerEl.style.top = `${window.visualViewport.offsetTop}px`;
-                }
-            });
+            };
+            window.visualViewport.addEventListener('resize', syncViewportLayout);
+            window.visualViewport.addEventListener('scroll', syncViewportLayout);
         }
+
+        // ক্রসব্রাউজার ব্যাকআপ লজিক (যেসব ব্রাউজারে visualViewport ঠিকমতো রেসপন্স করে না)
+        messageInput.addEventListener('focus', () => {
+            setTimeout(() => {
+                if (activeChatUserId && messagesDisplay) {
+                    messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
+                }
+            }, 300); // কিবোর্ড অ্যানিমেশন শেষ হওয়ার ট্র্যাকিং ডিলে
+        });
+
+        messageInput.addEventListener('blur', () => {
+            // ইনপুট থেকে ফোকাস চলে গেলে কিছু ব্রাউজারের স্ক্রিন ঝুলে থাকা ফিক্স
+            document.body.scrollTop = 0;
+            window.scrollTo(0, 0);
+        });
+        /* =================================================================================== */
 
         if(backToSidebar) {
             backToSidebar.addEventListener("click", () => {

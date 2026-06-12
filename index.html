@@ -5,13 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MR - CHATTING | Blackpink Edition</title>
     
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome Icons Link -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Mobile Console Inspector -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
 
@@ -284,7 +281,7 @@
         }
 
         @keyframes pulse {
-            0’ { transform: scale(1); opacity: 0.8; }
+            0% { transform: scale(1); opacity: 0.8; }
             50% { transform: scale(1.05); opacity: 1; text-shadow: 0 0 20px rgba(255,0,127,0.6); }
             100% { transform: scale(1); opacity: 0.8; }
         }
@@ -430,7 +427,6 @@
 </head>
 <body>
 
-    <!-- ==================== AUTH CONTAINER ==================== -->
     <div id="auth-container" class="auth-box">
         <div class="auth-header">
             <i class="fas fa-heart-pulse"></i>
@@ -457,7 +453,6 @@
         </div>
     </div>
 
-    <!-- ==================== MAIN CHAT FRAMEWORK ==================== -->
     <div id="app-container" class="app-container hidden">
         <div class="sidebar" id="app-sidebar">
             <div class="sidebar-header">
@@ -517,7 +512,6 @@
 
     <div id="app-notification" class="toast hidden"></div>
 
-    <!-- ==================== CORE FIREBASE ENGINE ==================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -573,6 +567,7 @@
         let unsubscribeRealtimeStream = null; 
         let isLoginMode = false; 
         let activeTab = "chats";
+        let typingTimeout = null;
 
         function getChatRoomId(uid1, uid2) {
             return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
@@ -616,6 +611,7 @@
                         email: email,
                         photoURL: `https://api.dicebear.com/7.x/adventurer/svg?seed=${username}`,
                         status: "online",
+                        isTypingTo: null,
                         lastSeen: new Date().getTime()
                     });
                     showToast("Account profile mapped successfully!");
@@ -643,7 +639,7 @@
 
         if(logoutBtn) {
             logoutBtn.addEventListener("click", async () => {
-                if (currentUser) { try { await updateDoc(doc(db, "users", currentUser.uid), { status: "offline", lastSeen: new Date().getTime() }); } catch(e) {} }
+                if (currentUser) { try { await updateDoc(doc(db, "users", currentUser.uid), { status: "offline", isTypingTo: null, lastSeen: new Date().getTime() }); } catch(e) {} }
                 signOut(auth).then(() => { window.location.reload(); });
             });
         }
@@ -876,7 +872,15 @@
                     const data = docSnap.data();
                     chatUserName.innerText = data.username;
                     chatUserAvatar.src = data.photoURL || 'https://via.placeholder.com/40';
-                    chatUserStatus.innerText = data.status === "online" ? "Active Workspace" : "Away";
+                    
+                    // 🛠️ রিয়েল-টাইম টাইপিং কন্ডিশনাল চেকার
+                    if (data.isTypingTo === currentUser.uid) {
+                        chatUserStatus.innerText = "Typing...";
+                        chatUserStatus.style.color = "var(--pink-light)";
+                    } else {
+                        chatUserStatus.innerText = data.status === "online" ? "Active Workspace" : "Away";
+                        chatUserStatus.style.color = data.status === "online" ? "var(--pink-light)" : "var(--text-muted)";
+                    }
                 }
             });
 
@@ -884,13 +888,13 @@
 
             const targetRoomId = getChatRoomId(currentUser.uid, targetUid);
 
-            // 🛠️ ডুপ্লিকেট মেসেজ আসা চিরতরে বন্ধ করতে শুধুমাত্র এই একটি সাব-কালেকশন রিড হবে
+            // 🛠️ ডুপ্লিকেট মেসেজ আসা বন্ধ করতে সাব-কালেকশন স্ট্রিম রিডার
             unsubscribeMessagesSub = onSnapshot(collection(doc(db, "friendships", targetRoomId), "chat_messages"), (snapshot) => {
                 let combinedList = [];
                 snapshot.forEach(doc => combinedList.push({ id: doc.id, ...doc.data() }));
                 
-                // সঠিক ক্রোনোলজিক্যাল অর্ডার সর্টিং (পুরাতন মেসেজ উপরে, একদম নতুন মেসেজ নিচে)
-                combinedList.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                // সঠিক ক্রোনোলজিক্যাল অর্ডার সর্টিং
+                combinedList.sort((a, b) => (a.timestamp || 0) - (a.timestamp || 0));
 
                 messagesDisplay.innerHTML = "";
                 combinedList.forEach(msgData => renderSingleMessageBubble(msgData));
@@ -917,20 +921,45 @@
             messagesDisplay.appendChild(row);
         }
 
-        // 🛠️ ইউনিফাইড মেসেজ রাইটিং ইঞ্জিন (১০০% গ্যারান্টিড মেসি অ্যাকাউন্ট এবং অল অ্যাকাউন্ট টেক্সট ডেলিভারি)
+        // 🛠️ টাইপিং ডিটেকশন ট্রিপল স্টেট লিসেনার ইঞ্জিন
+        messageInput.addEventListener("input", async () => {
+            if (!currentUser || !activeChatUserId) return;
+
+            try {
+                await updateDoc(doc(db, "users", currentUser.uid), {
+                    isTypingTo: activeChatUserId
+                });
+
+                // ৩ সেকেন্ড ইনপুট নিষ্ক্রিয় থাকলে টাইপিং অফ হবে
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(async () => {
+                    await updateDoc(doc(db, "users", currentUser.uid), {
+                        isTypingTo: null
+                    });
+                }, 3000);
+
+            } catch (err) { console.error("Typing state error: ", err); }
+        });
+
+        // 🛠️ ইউনিফাইড মেসেজ রাইটিং ইঞ্জিন
         messageForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const txt = messageInput.value.trim();
             if (!txt || !activeChatUserId) return;
 
             messageInput.value = "";
+            
+            // মেসেজ সাবমিট হলে সাথে সাথে টাইপিং মোড ক্লিয়ার করুন
+            clearTimeout(typingTimeout);
+            try { await updateDoc(doc(db, "users", currentUser.uid), { isTypingTo: null }); } catch(err){}
+
             const currentTimestamp = new Date().getTime();
             const roomId = getChatRoomId(currentUser.uid, activeChatUserId);
 
             try {
                 const chatRoomRef = doc(db, "friendships", roomId);
                 
-                // শুধুমাত্র চ্যাট রুমের সাব-কালেকশনে মেসেজ যাবে (মেইন কালেকশনে ডাবল এন্ট্রি হবে না)
+                // সাব-কালেকশনে মেসেজ ডেলিভারি
                 await addDoc(collection(chatRoomRef, "chat_messages"), {
                     senderId: currentUser.uid,
                     receiverId: activeChatUserId,
@@ -938,7 +967,7 @@
                     timestamp: currentTimestamp
                 });
 
-                // লাস্ট মেসেজ প্রিভিউ মেটাডেটা রিয়েলটাইম আপডেট
+                // লাস্ট মেসেজ প্রিভিউ মেটাডেটা আপডেট
                 await setDoc(chatRoomRef, {
                     user1: currentUser.uid < activeChatUserId ? currentUser.uid : activeChatUserId,
                     user2: currentUser.uid < activeChatUserId ? activeChatUserId : currentUser.uid,

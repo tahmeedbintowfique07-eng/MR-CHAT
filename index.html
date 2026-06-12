@@ -56,14 +56,15 @@
             text-align: center;
         }
 
+        /* লোগো ইমেজ স্টাইলিং */
         .auth-header-logo {
-            width: 110px;
-            height: 110px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
+            object-fit: cover;
             margin-bottom: 15px;
             border: 2px solid var(--pink-primary);
-            box-shadow: 0 0 20px rgba(255, 0, 127, 0.4);
-            object-fit: cover;
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.5);
         }
 
         .auth-header h2 {
@@ -277,21 +278,22 @@
             text-align: center;
         }
 
+        /* ওয়েলকাম স্ক্রিন লোগো স্টাইল */
         .welcome-logo {
-            width: 140px;
-            height: 140px;
+            width: 130px;
+            height: 130px;
             border-radius: 50%;
+            object-fit: cover;
             margin-bottom: 20px;
             border: 2px solid var(--pink-primary);
-            object-fit: cover;
-            box-shadow: 0 0 25px rgba(255, 0, 127, 0.5);
+            box-shadow: 0 0 25px rgba(255,0,127,0.5);
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.9; box-shadow: 0 0 25px rgba(255, 0, 127, 0.4); }
-            50% { transform: scale(1.04); opacity: 1; box-shadow: 0 0 40px rgba(255, 0, 127, 0.7); }
-            100% { transform: scale(1); opacity: 0.9; box-shadow: 0 0 25px rgba(255, 0, 127, 0.4); }
+            0% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 20px rgba(255,0,127,0.5); }
+            50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 35px rgba(255,0,127,0.8); }
+            100% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 20px rgba(255,0,127,0.5); }
         }
 
         .chat-area {
@@ -431,10 +433,8 @@
 </head>
 <body>
 
-    <!-- Auth Module Container -->
     <div id="auth-container" class="auth-box">
         <div class="auth-header">
-            <!-- যুক্ত করা হলো প্রিমিয়াম এআই জেনারেটেড লোগো -->
             <img src="1000035236.jpg" alt="MR CHAT LOGO" class="auth-header-logo">
             <h2>MR - CHATTING</h2>
             <p id="auth-subtitle">Welcome to the Premium Blackpink Workspace</p>
@@ -459,7 +459,6 @@
         </div>
     </div>
 
-    <!-- Core App Application Container -->
     <div id="app-container" class="app-container hidden">
         <div class="sidebar" id="app-sidebar">
             <div class="sidebar-header">
@@ -487,7 +486,6 @@
         </div>
 
         <div class="chat-main" id="chat-window-view">
-            <!-- ওয়েলকাম স্ক্রিনেও পালস অ্যানিমেশনসহ লোগো যুক্ত করা হলো -->
             <div id="welcome-view" class="welcome-screen">
                 <div class="welcome-content">
                     <img src="1000035236.jpg" alt="MR CHAT LOGO" class="welcome-logo">
@@ -496,7 +494,6 @@
                 </div>
             </div>
 
-            <!-- Active Conversation Component -->
             <div id="active-chat-view" class="chat-area hidden">
                 <div class="chat-header">
                     <button id="back-to-sidebar" class="icon-btn"><i class="fas fa-chevron-left"></i></button>
@@ -521,14 +518,13 @@
 
     <div id="app-notification" class="toast hidden"></div>
 
-    <!-- Core Logic Integration System -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, query, where, or, and, orderBy, onSnapshot, addDoc, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore as firestoreDb } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        
+        // [CRITICAL BUG FIX]: getFirestore মেথডটি ডুপ্লিকেট ইমপোর্ট বাদ দিয়ে সঠিক ডোমেন থেকে ইমপোর্ট করা হলো
+        import { getFirestore, doc, setDoc, collection, query, where, or, and, orderBy, onSnapshot, addDoc, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // ফায়ারবেস কনফিগারেশন এবং বাকি ফাংশনালিটি আগের মতোই অক্ষুণ্ণ রয়েছে...
         const firebaseConfig = {
             apiKey: "AIzaSyCr9Bfn4Ep-qw9JFkguyak00dsN90GSgRY",
             authDomain: "mr-chatting-ff2b6.firebaseapp.com",
@@ -541,7 +537,7 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = firestoreDb(app);
+        const db = getFirestore(app);
 
         // Core DOM References
         const authContainer = document.getElementById("auth-container");
@@ -981,35 +977,27 @@
             messagesDisplay.appendChild(row);
         }
 
-        /* 📱 ==================== [CRITICAL BROWSER KEYBOARD BUGS FIX CORE] ==================== */
         if (window.visualViewport) {
-            const syncViewportLayout = () => {
+            window.visualViewport.addEventListener('resize', () => {
                 const appContainerEl = document.getElementById("app-container");
                 if (appContainerEl) {
                     appContainerEl.style.height = `${window.visualViewport.height}px`;
                     appContainerEl.style.top = `${window.visualViewport.offsetTop}px`;
                 }
-                if (activeChatUserId && messagesDisplay) {
-                    messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
+                if(activeChatUserId) {
+                    setTimeout(() => {
+                        messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
+                    }, 100);
                 }
-            };
-            window.visualViewport.addEventListener('resize', syncViewportLayout);
-            window.visualViewport.addEventListener('scroll', syncViewportLayout);
+            });
+            
+            window.visualViewport.addEventListener('scroll', () => {
+                const appContainerEl = document.getElementById("app-container");
+                if (appContainerEl) {
+                    appContainerEl.style.top = `${window.visualViewport.offsetTop}px`;
+                }
+            });
         }
-
-        messageInput.addEventListener('focus', () => {
-            setTimeout(() => {
-                if (activeChatUserId && messagesDisplay) {
-                    messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
-                }
-            }, 300);
-        });
-
-        messageInput.addEventListener('blur', () => {
-            document.body.scrollTop = 0;
-            window.scrollTo(0, 0);
-        });
-        /* =================================================================================== */
 
         if(backToSidebar) {
             backToSidebar.addEventListener("click", () => {

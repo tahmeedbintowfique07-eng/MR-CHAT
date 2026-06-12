@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MR - CHATTING | Blackpink Edition</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
@@ -35,7 +35,7 @@
         body {
             background-color: var(--bg-main);
             color: var(--text-main);
-            height: 100vh;
+            height: 100dvh;
             overflow: hidden;
             display: flex;
             align-items: center;
@@ -129,13 +129,14 @@
         .app-container {
             display: flex;
             width: 100vw;
-            height: 100vh;
+            height: 100dvh; /* ডিভাইস রেসপন্সিভ হাইট ফিক্স */
             background-color: var(--bg-main);
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
+            overflow: hidden;
         }
 
         .sidebar {
@@ -350,7 +351,7 @@
             display: block;
         }
 
-        /* Keyboard Responsive Input Area */
+        /* Message Input Area */
         .message-input-area {
             padding: 20px;
             background: var(--bg-sidebar);
@@ -409,7 +410,7 @@
             transition: all 0.3s ease;
         }
 
-        /* Mobile Adjustments */
+        /* Mobile Responsive Breakpoints */
         @media (max-width: 768px) {
             .sidebar { width: 100%; }
             .sidebar.mobile-hidden { display: none !important; }
@@ -423,6 +424,7 @@
 </head>
 <body>
 
+    <!-- Auth Module Container -->
     <div id="auth-container" class="auth-box">
         <div class="auth-header">
             <i class="fas fa-heart-pulse"></i>
@@ -449,6 +451,7 @@
         </div>
     </div>
 
+    <!-- Core App Application Container -->
     <div id="app-container" class="app-container hidden">
         <div class="sidebar" id="app-sidebar">
             <div class="sidebar-header">
@@ -484,6 +487,7 @@
                 </div>
             </div>
 
+            <!-- Active Conversation Component -->
             <div id="active-chat-view" class="chat-area hidden">
                 <div class="chat-header">
                     <button id="back-to-sidebar" class="icon-btn"><i class="fas fa-chevron-left"></i></button>
@@ -508,6 +512,7 @@
 
     <div id="app-notification" class="toast hidden"></div>
 
+    <!-- Core Logic Integration System -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -527,7 +532,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // DOM Element Mapping
+        // Core DOM References
         const authContainer = document.getElementById("auth-container");
         const appContainer = document.getElementById("app-container");
         const appSidebar = document.getElementById("app-sidebar");
@@ -565,11 +570,12 @@
         let activeTab = "chats";
         let typingTimeout = null;
 
+        // Symmetric Room Generator 
         function getChatRoomId(uid1, uid2) {
             return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
         }
 
-        // Toggle Logic Fix
+        // Event-Delegation Binding for Login/Registration Mode Switches
         document.addEventListener("click", function(e) {
             if(e.target && e.target.id === 'auth-toggle-link'){
                 isLoginMode = !isLoginMode;
@@ -638,8 +644,9 @@
             });
         }
 
+        // [BUG FIX] CamelCase matching for 'friendRequests' collection
         function listenRequestBadge() {
-            const qReq = query(collection(db, "friend_requests"), where("receiverId", "==", currentUser.uid), where("status", "==", "pending"));
+            const qReq = query(collection(db, "friendRequests"), where("receiverId", "==", currentUser.uid), where("status", "==", "pending"));
             onSnapshot(qReq, (snap) => {
                 if(!snap.empty) {
                     reqBadge.innerText = snap.size;
@@ -707,14 +714,17 @@
         async function loadGlobalUsersExplore() {
             activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">Syncing workspace database...</p>`;
             
-            const reqSnap = await getDocs(collection(db, "friend_requests"));
+            // [BUG FIX] Database sync for camelCase mapping
+            const reqSnap = await getDocs(collection(db, "friendRequests"));
             const activeRelations = new Map(); 
 
             reqSnap.forEach(doc => {
                 const d = doc.data();
-                if(d.senderId === currentUser.uid || d.receiverId === currentUser.uid) {
-                    const counterPart = d.senderId === currentUser.uid ? d.receiverId : d.senderId;
-                    activeRelations.set(counterPart, { type: 'request', status: d.status, isSender: d.senderId === currentUser.uid });
+                const sender = d.senderId || d.from;
+                const receiver = d.receiverId || d.to;
+                if(sender === currentUser.uid || receiver === currentUser.uid) {
+                    const counterPart = sender === currentUser.uid ? receiver : sender;
+                    activeRelations.set(counterPart, { type: 'request', status: d.status, isSender: sender === currentUser.uid });
                 }
             });
 
@@ -746,6 +756,8 @@
                                 buttonHTML = relation.isSender ? 
                                     `<button class="action-btn-sm btn-muted" disabled>Requested</button>` : 
                                     `<button class="action-btn-sm btn-pink" onclick="window.switchTab('requests')">Review</button>`;
+                            } else if(relation.status === 'accepted') {
+                                buttonHTML = `<span style="color:var(--pink-light); font-size:0.8rem; font-weight:600;"><i class="fas fa-check-circle"></i> Friends</span>`;
                             }
                         }
                     }
@@ -756,8 +768,9 @@
             if(count === 0) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No users found.</p>`;
         }
 
+        // [BUG FIX] Structural parameters aligned with friendRequests data maps
         function loadIncomingRequestsStream() {
-            const qReq = query(collection(db, "friend_requests"), where("receiverId", "==", currentUser.uid), where("status", "==", "pending"));
+            const qReq = query(collection(db, "friendRequests"), where("receiverId", "==", currentUser.uid), where("status", "==", "pending"));
             unsubscribeRealtimeStream = onSnapshot(qReq, async (snap) => {
                 if (activeTab !== "requests") return;
                 activeChatsList.innerHTML = "";
@@ -769,12 +782,15 @@
 
                 for (let rDoc of snap.docs) {
                     const rData = rDoc.data();
-                    const uSnap = await getDocs(query(collection(db, "users"), where("uid", "==", rData.senderId)));
+                    const senderUid = rData.senderId || rData.from;
+                    if(!senderUid) continue;
+
+                    const uSnap = await getDocs(query(collection(db, "users"), where("uid", "==", senderUid)));
                     if(!uSnap.empty) {
                         const senderData = uSnap.docs[0].data();
                         const actionButtons = `
                             <div style="display:flex; gap:5px;">
-                                <button class="action-btn-sm btn-pink" onclick="acceptFriendRequest('${rDoc.id}', '${rData.senderId}')">Accept</button>
+                                <button class="action-btn-sm btn-pink" onclick="acceptFriendRequest('${rDoc.id}', '${senderUid}')">Accept</button>
                                 <button class="action-btn-sm btn-muted" onclick="rejectFriendRequest('${rDoc.id}')">Reject</button>
                             </div>
                         `;
@@ -787,9 +803,11 @@
         window.sendFriendRequest = async function(targetUid) {
             try {
                 const reqId = `${currentUser.uid}_${targetUid}`;
-                await setDoc(doc(db, "friend_requests", reqId), {
+                await setDoc(doc(db, "friendRequests", reqId), {
                     senderId: currentUser.uid,
+                    from: currentUser.uid,
                     receiverId: targetUid,
+                    to: targetUid,
                     status: "pending",
                     timestamp: new Date().getTime()
                 });
@@ -800,7 +818,7 @@
 
         window.acceptFriendRequest = async function(reqDocId, senderUid) {
             try {
-                await deleteDoc(doc(db, "friend_requests", reqDocId));
+                await deleteDoc(doc(db, "friendRequests", reqDocId));
                 const roomId = getChatRoomId(currentUser.uid, senderUid);
                 await setDoc(doc(db, "friendships", roomId), {
                     user1: currentUser.uid < senderUid ? currentUser.uid : senderUid,
@@ -815,12 +833,13 @@
 
         window.rejectFriendRequest = async function(reqDocId) {
             try {
-                await deleteDoc(doc(db, "friend_requests", reqDocId));
+                await deleteDoc(doc(db, "friendRequests", reqDocId));
                 showToast("Request declined.");
                 switchTab("requests");
             } catch(e) { alert(e.message); }
         };
 
+        // [BUG FIX] Streaming pipeline explicitly targeted down to chat_messages subcollections
         async function openChatWindowWithTargetUser(targetUid) {
             activeChatUserId = targetUid;
             appSidebar.classList.add("mobile-hidden");
@@ -847,15 +866,22 @@
             if (unsubscribeMessagesSub) unsubscribeMessagesSub();
 
             const targetRoomId = getChatRoomId(currentUser.uid, targetUid);
+            const msgCollectionRef = collection(db, "friendships", targetRoomId, "chat_messages");
 
-            unsubscribeMessagesSub = onSnapshot(collection(doc(db, "friendships", targetRoomId), "chat_messages"), (snapshot) => {
+            unsubscribeMessagesSub = onSnapshot(msgCollectionRef, (snapshot) => {
+                if (activeChatUserId !== targetUid) return;
                 let combinedList = [];
-                snapshot.forEach(doc => combinedList.push({ id: doc.id, ...doc.data() }));
+                snapshot.forEach(doc => {
+                    combinedList.push({ id: doc.id, ...doc.data() });
+                });
+                
                 combinedList.sort((a, b) => (a.timestamp || 0) - (a.timestamp || 0));
 
                 messagesDisplay.innerHTML = "";
                 combinedList.forEach(msgData => renderSingleMessageBubble(msgData));
                 messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
+            }, (error) => {
+                console.error("Firestore Messaging Loop Disconnect Error:", error);
             });
         }
         window.openChatWindowWithTargetUser = openChatWindowWithTargetUser;
@@ -895,10 +921,11 @@
             } catch (err) { console.error(err); }
         });
 
+        // [BUG FIX] Secure collection references structured clean out of local scopes
         messageForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const txt = messageInput.value.trim();
-            if (!txt || !activeChatUserId) return;
+            if (!txt || !activeChatUserId || !currentUser) return;
 
             messageInput.value = "";
             clearTimeout(typingTimeout);
@@ -909,7 +936,9 @@
 
             try {
                 const chatRoomRef = doc(db, "friendships", roomId);
-                await addDoc(collection(chatRoomRef, "chat_messages"), {
+                const msgCollectionRef = collection(chatRoomRef, "chat_messages");
+
+                await addDoc(msgCollectionRef, {
                     senderId: currentUser.uid,
                     receiverId: activeChatUserId,
                     text: txt,
@@ -923,7 +952,10 @@
                     timestamp: currentTimestamp
                 }, { merge: true });
 
-            } catch(err) { console.error("Database block error: ", err); }
+            } catch(err) { 
+                console.error("Transmission Blocked runtime error: ", err); 
+                showToast("Failed to distribute real-time message.");
+            }
         });
 
         function renderSingleMessageBubble(msgData) {
@@ -945,19 +977,18 @@
             messagesDisplay.appendChild(row);
         }
 
-        // 📱 কিবোর্ড ট্র্যাকিং মেকানিজম (VisualViewport API + CSS Absolute Mapping)
+        // 📱 [DEVICE/KEYBOARD FIX] Comprehensive Dynamic Engine tracking via visualViewport
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
                 const appContainerEl = document.getElementById("app-container");
                 if (appContainerEl) {
-                    // ভিউপোর্টের রিয়েল-টাইম হাইট সেট করে পুরো কন্টেইনারকে কিবোর্ডের উপরে লক করে দেওয়া হচ্ছে
                     appContainerEl.style.height = `${window.visualViewport.height}px`;
                     appContainerEl.style.top = `${window.visualViewport.offsetTop}px`;
                 }
                 if(activeChatUserId) {
                     setTimeout(() => {
                         messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
-                    }, 80);
+                    }, 100);
                 }
             });
             

@@ -93,6 +93,7 @@
             position: absolute;
             left: 15px;
             color: var(--text-muted);
+            z-index: 2;
         }
 
         .input-group input {
@@ -110,6 +111,15 @@
             border-color: var(--pink-primary);
             outline: none;
             box-shadow: 0 0 10px rgba(255, 0, 127, 0.2);
+        }
+
+        /* View Mode Input Locking */
+        .input-group input:disabled {
+            background: rgba(255, 255, 255, 0.02) !important;
+            border-color: rgba(255, 0, 127, 0.05) !important;
+            color: #fff !important;
+            cursor: default;
+            box-shadow: none !important;
         }
 
         .main-btn {
@@ -513,7 +523,7 @@
             <div id="active-chat-view" class="chat-area hidden">
                 <div class="chat-header">
                     <button id="back-to-sidebar" class="icon-btn"><i class="fas fa-chevron-left"></i></button>
-                    <div class="target-user-info" style="display:flex; align-items:center; gap:12px;">
+                    <div id="target-user-profile-trigger" class="target-user-info" style="display:flex; align-items:center; gap:12px; cursor:pointer;">
                         <img id="chat-user-avatar" src="https://via.placeholder.com/40" class="avatar" alt="User">
                         <div>
                             <div id="chat-user-name" style="font-weight:600;">Username</div>
@@ -536,13 +546,13 @@
         <div class="auth-box" style="position: relative; max-width: 420px; width: 100%;">
             <button id="close-profile-btn" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;"><i class="fas fa-times"></i></button>
             <div class="auth-header">
-                <h2>Edit Profile</h2>
-                <p>Update your network identity and details</p>
+                <h2 id="modal-title">Edit Profile</h2>
+                <p id="modal-subtitle">Update your network identity and details</p>
             </div>
             <form id="profile-update-form">
                 <div style="margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
                     <img id="modal-preview-avatar" src="https://via.placeholder.com/90" style="width: 90px; height: 90px; border-radius: 50%; border: 2px solid var(--pink-primary); object-fit: cover;">
-                    <label for="profile-dp-input" class="action-btn-sm btn-pink" style="cursor: pointer; display: inline-block; padding: 8px 15px;"><i class="fas fa-camera"></i> Select Photo</label>
+                    <label id="upload-dp-label" for="profile-dp-input" class="action-btn-sm btn-pink" style="cursor: pointer; display: inline-block; padding: 8px 15px;"><i class="fas fa-camera"></i> Select Photo</label>
                     <input type="file" id="profile-dp-input" accept="image/*" class="hidden">
                 </div>
                 
@@ -573,8 +583,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, collection, query, where, or, orderBy, onSnapshot, addDoc, getDocs, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        // STORAGE REMOVED: বিকল্প ১ ব্যবহারের কারণে ক্লাউড স্টোরেজের ইমপোর্ট লাইন ফেলে দেওয়া হয়েছে।
 
         const firebaseConfig = {
             apiKey: "AIzaSyCr9Bfn4Ep-qw9JFkguyak00dsN90GSgRY",
@@ -630,6 +638,12 @@
         const profileFrom = document.getElementById("profile-from");
         const profileProfession = document.getElementById("profile-profession");
         const profileSaveBtn = document.getElementById("profile-save-btn");
+        
+        // Added References for View Mode Functionality
+        const modalTitle = document.getElementById("modal-title");
+        const modalSubtitle = document.getElementById("modal-subtitle");
+        const uploadDpLabel = document.getElementById("upload-dp-label");
+        const targetUserProfileTrigger = document.getElementById("target-user-profile-trigger");
 
         let currentUser = null;
         let activeChatUserId = null;
@@ -1107,9 +1121,38 @@
         });
 
         // ==================== PROFILE LOGIC & EVENTS ====================
+        
+        // FUNCTION TO TOGGLE BETWEEN EDIT AND VIEW MODES
+        function setProfileModalMode(isViewMode) {
+            if (isViewMode) {
+                modalTitle.innerText = "User Profile";
+                modalSubtitle.innerText = "Network details of the connected node";
+                uploadDpLabel.classList.add("hidden");
+                profileSaveBtn.classList.add("hidden");
+                
+                // Disable fields so they can't be typed in
+                profileName.disabled = true;
+                profileAge.disabled = true;
+                profileFrom.disabled = true;
+                profileProfession.disabled = true;
+            } else {
+                modalTitle.innerText = "Edit Profile";
+                modalSubtitle.innerText = "Update your network identity and details";
+                uploadDpLabel.classList.remove("hidden");
+                profileSaveBtn.classList.remove("hidden");
+                
+                // Enable fields for editing
+                profileName.disabled = false;
+                profileAge.disabled = false;
+                profileFrom.disabled = false;
+                profileProfession.disabled = false;
+            }
+        }
+
         if (openProfileBtn) {
             openProfileBtn.addEventListener("click", async () => {
                 if (!currentUser) return;
+                setProfileModalMode(false); // Edit Mode for current user
                 profileModal.classList.remove("hidden");
                 
                 try {
@@ -1123,6 +1166,27 @@
                         modalPreviewAvatar.src = userData.photoURL || currentUser.photoURL || "https://via.placeholder.com/90";
                     }
                 } catch (e) { console.error("Profile data fetch anomaly:", e); }
+            });
+        }
+
+        // DYNAMIC PROFILE TRIGGER FOR OTHER USERS
+        if (targetUserProfileTrigger) {
+            targetUserProfileTrigger.addEventListener("click", async () => {
+                if (!activeChatUserId) return;
+                setProfileModalMode(true); // View Mode for other users
+                profileModal.classList.remove("hidden");
+
+                try {
+                    const targetDocSnap = await getDoc(doc(db, "users", activeChatUserId));
+                    if (targetDocSnap.exists()) {
+                        const targetData = targetDocSnap.data();
+                        profileName.value = targetData.fullName || targetData.username || "Anonymous";
+                        profileAge.value = targetData.age || "Not Specified";
+                        profileFrom.value = targetData.from || "Not Specified";
+                        profileProfession.value = targetData.profession || "Not Specified";
+                        modalPreviewAvatar.src = targetData.photoURL || "https://via.placeholder.com/90";
+                    }
+                } catch (e) { console.error("Target data fetch anomaly:", e); }
             });
         }
 
@@ -1156,9 +1220,8 @@
                 profileSaveBtn.disabled = true;
                 profileSaveBtn.innerText = "Synchronizing...";
 
-                let downloadURL = modalPreviewAvatar.src; // ডিফল্ট বা আগের ইমেজ URL
+                let downloadURL = modalPreviewAvatar.src; 
 
-                // File Reader দিয়ে ইমেজকে Base64 এ কনভার্ট করার এসিনক্রোনাস ফাংশন
                 const convertFileToBase64 = (file) => {
                     return new Promise((resolve, reject) => {
                         const reader = new FileReader();
@@ -1169,9 +1232,7 @@
                 };
 
                 try {
-                    // ইউজার যদি নতুন ইমেজ সিলেক্ট করে থাকে
                     if (selectedFile) {
-                        // ২ মেগাবাইটের বেশি ছবি আপলোড করতে বাধা দিবে (Firestore single document limit is 16MB, keeping it safe under 2MB)
                         if (selectedFile.size > 2 * 1024 * 1024) {
                             alert("Image is too large! Please select an image under 2MB.");
                             profileSaveBtn.disabled = false;
@@ -1181,7 +1242,6 @@
                         downloadURL = await convertFileToBase64(selectedFile);
                     }
 
-                    // Firebase Auth Profile-এর ডিসপ্লে নেম ও ফটো সিঙ্ক
                     try {
                         await updateProfile(currentUser, {
                             displayName: profileName.value.trim(),
@@ -1191,7 +1251,6 @@
                         console.log("Auth photo sync bypassed, saving to Firestore database directly."); 
                     }
 
-                    // সম্পূর্ণ ডাটা (Base64 ইমেজ স্ট্রিং সহ) Firestore "users" কালেকশনে সেভ করা
                     await setDoc(doc(db, "users", currentUser.uid), {
                         fullName: profileName.value.trim(),
                         age: Number(profileAge.value),

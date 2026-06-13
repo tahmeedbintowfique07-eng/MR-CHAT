@@ -1965,9 +1965,9 @@ let selectedCoverFile = null;
                 authContainer.classList.add("hidden");
                 appContainer.classList.remove("hidden");
 
-                await initializeUserStats(user);
-                await checkDailyLogin();
-                startGoldEarningTimer();
+                try { await initializeUserStats(user); } catch(e) { console.warn("initStats:", e); }
+                try { await checkDailyLogin(); } catch(e) { console.warn("dailyLogin:", e); }
+                try { startGoldEarningTimer(); } catch(e) { console.warn("goldTimer:", e); }
 
                 onSnapshot(doc(db, "users", user.uid), (docSnap) => {
                     if (docSnap.exists()) {
@@ -1993,8 +1993,8 @@ let selectedCoverFile = null;
                 listenGlobalIncomingMessagesForNotification();
                 initMessageActionListeners();
                 listenForIncomingCalls();
-                setupGamesModal();
-                setupLeaderboardModals();
+                try { setupGamesModal(); } catch(e) { console.warn("gamesSetup:", e); }
+                try { setupLeaderboardModals(); } catch(e) { console.warn("lbSetup:", e); }
             } else {
                 currentUser = null;
                 appContainer.classList.add("hidden");
@@ -3514,8 +3514,10 @@ function updateSidebarGoldDisplay(gold) {
 }
 
 async function initializeUserStats(user) {
+    if (!user || !user.uid) return;
     const userRef = doc(db, "users", user.uid);
-    const snap = await getDoc(userRef);
+    let snap;
+    try { snap = await getDoc(userRef); } catch(e) { return; }
     if (!snap.exists()) return;
     const data = snap.data();
     const updates = {};
@@ -3550,12 +3552,12 @@ async function initializeUserStats(user) {
 }
 
 async function earnGold(amount, reason) {
-    if (!currentUser) return;
+    if (!currentUser || !currentUser.uid) return;
     const userRef = doc(db, "users", currentUser.uid);
     try {
         const snap = await getDoc(userRef);
-        if (!snap.exists()) return;
-        const currentGold = snap.data().gold || 0;
+        if (!snap || !snap.exists()) return;
+        const currentGold = (snap.data() || {}).gold || 0;
         await updateDoc(userRef, { gold: increment(amount) });
         updateSidebarGoldDisplay(currentGold + amount);
     } catch(e) { console.error("Gold earn error:", e); }
@@ -3565,6 +3567,7 @@ async function checkDailyLogin() {
     if (!currentUser) return;
     const userRef = doc(db, "users", currentUser.uid);
     const snap = await getDoc(userRef);
+    if (!snap.exists()) return;
     const data = snap.data();
     const now = new Date();
     const lastLogin = data.lastLoginDate ? new Date(data.lastLoginDate) : null;
@@ -3960,12 +3963,18 @@ function setupGamesModal() {
 }
 
 function setupLeaderboardModals() {
-    document.getElementById('close-gold-leaderboard').addEventListener('click', () => {
-        document.getElementById('gold-leaderboard-modal').classList.add('hidden');
-    });
-    document.getElementById('close-level-leaderboard').addEventListener('click', () => {
-        document.getElementById('level-leaderboard-modal').classList.add('hidden');
-    });
+    const closeGold = document.getElementById('close-gold-leaderboard');
+    const closeLevel = document.getElementById('close-level-leaderboard');
+    if (closeGold) {
+        closeGold.addEventListener('click', () => {
+            document.getElementById('gold-leaderboard-modal').classList.add('hidden');
+        });
+    }
+    if (closeLevel) {
+        closeLevel.addEventListener('click', () => {
+            document.getElementById('level-leaderboard-modal').classList.add('hidden');
+        });
+    }
 }
 
 async function loadGoldLeaderboard() {

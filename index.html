@@ -12,7 +12,6 @@
     <script>eruda.init();</script>
 
     <style>
-        /* ==================== BLACKPINK PREMIUM STYLESHEET ==================== */
         :root {
             --bg-main: #0B0C10;
             --bg-sidebar: #12131C;
@@ -24,7 +23,6 @@
             --text-muted: #8F92A1;
             --glass-border: rgba(255, 0, 127, 0.15);
             
-            /* Status Colors */
             --status-sent: #8F92A1;
             --status-delivered: #CCCCCC;
             --status-seen: #00E6FF;
@@ -49,7 +47,7 @@
 
         .hidden { display: none !important; }
 
-        /* Auth Container */
+        /* Auth Box */
         .auth-box {
             background: var(--bg-sidebar);
             border: 1px solid var(--glass-border);
@@ -132,17 +130,14 @@
         }
         .main-btn:hover { background: var(--pink-hover); }
 
-        /* App Layout */
+        /* Main Container Layout */
         .app-container {
             display: flex;
             width: 100vw;
             height: 100dvh;
             background-color: var(--bg-main);
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             overflow: hidden;
         }
 
@@ -262,7 +257,7 @@
         .btn-pink:hover { background: var(--pink-hover); }
         .btn-muted { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--glass-border); }
 
-        /* Chat Window Area */
+        /* Chat Core Elements */
         .chat-main {
             flex: 1;
             background: var(--bg-main);
@@ -334,7 +329,7 @@
         .msg-row.received { justify-content: flex-start; }
 
         .msg-bubble {
-            max-width: 65%;
+            max-width: 75%;
             padding: 12px 18px;
             border-radius: 18px;
             font-size: 0.95rem;
@@ -358,29 +353,63 @@
 
         .msg-media-content {
             max-width: 100%;
-            border-radius: 10px;
+            border-radius: 12px;
             margin-top: 5px;
             display: block;
-            cursor: pointer;
             max-height: 200px;
             object-fit: cover;
         }
 
-        /* Premium Voice Player Styling */
-        .msg-voice-player {
+        /* PREMIUM CUSTOM AUDIO PLAYER UI */
+        .premium-audio-player {
             display: flex;
             align-items: center;
-            gap: 10px;
-            min-width: 200px;
-            padding: 5px 0;
+            gap: 12px;
+            min-width: 220px;
+            padding: 6px 0;
+            color: #fff;
         }
-        .msg-voice-player audio {
-            outline: none;
-            max-width: 100%;
-            height: 32px;
+        
+        .audio-control-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
         }
-        .sent .msg-voice-player audio::-webkit-media-controls-panel {
-            background-color: rgba(255, 255, 255, 0.2);
+        .audio-control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .audio-timeline-track {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 2px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .audio-timeline-fill {
+            height: 100%;
+            width: 0%;
+            background: #fff;
+            border-radius: 2px;
+            position: absolute;
+            top: 0; left: 0;
+        }
+        
+        .audio-time-stamp {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-variant-numeric: tabular-nums;
         }
 
         .msg-meta-wrapper {
@@ -413,6 +442,7 @@
             gap: 12px;
             align-items: center;
             flex-shrink: 0;
+            position: relative;
         }
 
         .message-input-area input {
@@ -445,18 +475,73 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 10px rgba(255, 0, 127, 0.3);
+            flex-shrink: 0;
         }
 
         .send-btn:hover { transform: scale(1.05); background: var(--pink-hover); }
 
-        /* Voice Note Recording UI State */
+        /* Floating Overlaid GIF Panel Config */
+        .gif-container-panel {
+            position: absolute;
+            bottom: 95px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 380px;
+            background: var(--bg-sidebar);
+            border: 1px solid var(--pink-primary);
+            border-radius: 20px;
+            padding: 16px;
+            z-index: 999;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            max-height: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .gif-search-bar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .gif-search-bar input {
+            flex: 1;
+            padding: 10px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.85rem;
+        }
+        .gif-results-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .gif-results-grid img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .gif-results-grid img:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 8px var(--pink-primary);
+        }
+
+        /* Voice Recording Pulse Node Styles */
         .voice-recording-active .icon-btn i.fa-microphone {
             color: var(--pink-primary);
             animation: mic-blink 1s infinite alternate;
         }
         @keyframes mic-blink {
             0% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0.4; transform: scale(1.15); }
+            100% { opacity: 0.3; transform: scale(1.2); }
         }
 
         .attachment-preview-bar {
@@ -473,56 +558,6 @@
             border: 1px solid var(--pink-primary);
         }
 
-        /* GIF Search Engine Dropdown/Popup Overlay */
-        .gif-container-panel {
-            position: absolute;
-            bottom: 90px;
-            left: 20px;
-            right: 20px;
-            background: var(--bg-sidebar);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 15px;
-            z-index: 100;
-            box-shadow: 0 -10px 25px rgba(0,0,0,0.5);
-            max-height: 280px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .gif-search-bar {
-            display: flex;
-            gap: 8px;
-        }
-        .gif-search-bar input {
-            flex: 1;
-            padding: 8px 12px;
-            background: var(--bg-card);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 0.85rem;
-        }
-        .gif-results-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            overflow-y: auto;
-            flex: 1;
-        }
-        .gif-results-grid img {
-            width: 100%;
-            height: 75px;
-            object-fit: cover;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .gif-results-grid img:hover {
-            transform: scale(1.03);
-            border: 1px solid var(--pink-primary);
-        }
-
         .toast {
             position: fixed;
             bottom: 30px;
@@ -534,7 +569,6 @@
             font-weight: 600;
             box-shadow: 0 10px 25px rgba(255,0,127,0.4);
             z-index: 9999;
-            transition: all 0.3s ease;
         }
 
         @media (max-width: 768px) {
@@ -638,10 +672,10 @@
 
                 <div id="messages-display" class="messages-container"></div>
 
-                <!-- GIF Selection Panel Popup Overlay -->
+                <!-- Floating Overlaid GIF Selector Panel -->
                 <div id="gif-panel" class="gif-container-panel hidden">
                     <div class="gif-search-bar">
-                        <input type="text" id="gif-search-input" placeholder="Search GIPHY Engine...">
+                        <input type="text" id="gif-search-input" placeholder="Search Engine (Tenor/Giphy)...">
                         <button id="close-gif-btn" class="icon-btn"><i class="fas fa-times"></i></button>
                     </div>
                     <div id="gif-results" class="gif-results-grid"></div>
@@ -670,7 +704,7 @@
         </div>
     </div>
 
-    <!-- User Profile Modal -->
+    <!-- Profile Modal -->
     <div id="profile-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
         <div class="auth-box" style="position: relative; max-width: 420px; width: 100%;">
             <button id="close-profile-btn" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;"><i class="fas fa-times"></i></button>
@@ -727,10 +761,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // GIPHY Engine API Meta (Safely handling Public Demo Token)
-        const GIPHY_API_KEY = "dc6zaTOxFJmzC"; 
-
-        // UI DOM References
+        // UI Target Pointers
         const authContainer = document.getElementById("auth-container");
         const appContainer = document.getElementById("app-container");
         const appSidebar = document.getElementById("app-sidebar");
@@ -758,7 +789,7 @@
         const tabRequests = document.getElementById("tab-requests");
         const reqBadge = document.getElementById("req-badge");
 
-        // Media & Voice Elements
+        // Attachments Nodes
         const inboxPhotoTriggerBtn = document.getElementById("inbox-photo-trigger-btn");
         const inboxGifTriggerBtn = document.getElementById("inbox-gif-trigger-btn");
         const inboxVoiceTriggerBtn = document.getElementById("inbox-voice-trigger-btn");
@@ -772,7 +803,7 @@
         const gifResults = document.getElementById("gif-results");
         const closeGifBtn = document.getElementById("close-gif-btn");
 
-        // Profile DOM References
+        // Profile References
         const profileModal = document.getElementById("profile-modal");
         const openProfileBtn = document.getElementById("open-profile-btn");
         const closeProfileBtn = document.getElementById("close-profile-btn");
@@ -784,7 +815,6 @@
         const profileFrom = document.getElementById("profile-from");
         const profileProfession = document.getElementById("profile-profession");
         const profileSaveBtn = document.getElementById("profile-save-btn");
-        
         const modalTitle = document.getElementById("modal-title");
         const modalSubtitle = document.getElementById("modal-subtitle");
         const uploadDpLabel = document.getElementById("upload-dp-label");
@@ -800,12 +830,14 @@
         let typingTimeout = null;
         let selectedFile = null;
         
-        // Attachment States
         let inboxSelectedBase64Image = null; 
         let inboxSelectedVoiceBase64 = null;
         let mediaRecorder = null;
         let audioChunks = [];
         let isVoiceRecording = false;
+
+        // Custom Premium Global Audio Tracking Map
+        window.activeAudioNodes = new Map();
 
         function getChatRoomId(uid1, uid2) {
             return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
@@ -1108,9 +1140,12 @@
             welcomeView.classList.add("hidden");
             activeChatView.classList.remove("hidden");
             
-            // Clean interface states
             resetAttachmentQueue();
             gifPanel.classList.add("hidden");
+
+            // Shut down existing audios
+            window.activeAudioNodes.forEach(node => { if(node.audio) node.audio.pause(); });
+            window.activeAudioNodes.clear();
 
             if (unsubscribeTargetUserStatus) unsubscribeTargetUserStatus();
 
@@ -1158,7 +1193,7 @@
                         needsBatchUpdate = true;
                         msgData.status = "seen"; 
                     }
-                    messagesHTML += getSingleMessageBubbleHTML(msgData);
+                    messagesHTML += getSingleMessageBubbleHTML(msgData, doc.id);
                 });
 
                 if (needsBatchUpdate) {
@@ -1166,6 +1201,15 @@
                 }
 
                 messagesDisplay.innerHTML = messagesHTML;
+                
+                // Initialize Custom Premium Audio Engine Triggers inside View
+                snapshot.forEach(doc => {
+                    const msgData = doc.data();
+                    if(msgData.voiceNotes) {
+                        initCustomAudioPlayerInstance(doc.id, msgData.voiceNotes);
+                    }
+                });
+
                 messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
             });
         }
@@ -1207,7 +1251,7 @@
             } catch (err) {}
         });
 
-        /* ==================== INBOX ATTACHMENTS & VOICE ENGINE ==================== */
+        /* ==================== MEDIA ATTACHMENTS ARCHITECTURE ==================== */
         
         function resetAttachmentQueue() {
             inboxSelectedBase64Image = null;
@@ -1219,14 +1263,13 @@
             messageForm.classList.remove("voice-recording-active");
         }
 
-        // Image Attachment Selector
         inboxPhotoTriggerBtn.addEventListener("click", () => inboxFileInput.click());
 
         inboxFileInput.addEventListener("change", (e) => {
             const file = e.target.files[0];
             if (file) {
                 if (file.size > 1.5 * 1024 * 1024) {
-                    alert("Image too heavy! Optimize or keep below 1.5MB for sync pipeline.");
+                    alert("Image exceeds 1.5MB size compression tier constraints.");
                     resetAttachmentQueue();
                     return;
                 }
@@ -1243,12 +1286,11 @@
             }
         });
 
-        // Voice Message Note Recording System
+        /* Premium Voice Core Recording Pipeline */
         inboxVoiceTriggerBtn.addEventListener("click", async () => {
             if (!isVoiceRecording) {
-                // Request mic permission and start recording
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    alert("Voice recording architecture not supported on this node browser.");
+                    alert("Recording module failed: Media execution context absent.");
                     return;
                 }
                 try {
@@ -1270,8 +1312,6 @@
                             inboxImgPreviewBar.classList.remove("hidden");
                         };
                         reader.readAsDataURL(audioBlob);
-                        
-                        // Stop all tracks to release hardware mic
                         stream.getTracks().forEach(track => track.stop());
                     });
 
@@ -1280,10 +1320,9 @@
                     messageForm.classList.add("voice-recording-active");
                     showToast("Recording transmission initialized...");
                 } catch (err) {
-                    alert("Microphone hardware access denied.");
+                    alert("Microphone node allocation rejected.");
                 }
             } else {
-                // Stop ongoing recording session
                 if (mediaRecorder && mediaRecorder.state !== "inactive") {
                     mediaRecorder.stop();
                 }
@@ -1302,7 +1341,7 @@
             resetAttachmentQueue();
         });
 
-        // Toggle Dynamic GIPHY Panel Window
+        // Optimized Open-Source Gifs Loader Module
         inboxGifTriggerBtn.addEventListener("click", () => {
             gifPanel.classList.toggle("hidden");
             if(!gifPanel.classList.contains("hidden")) {
@@ -1313,13 +1352,14 @@
         closeGifBtn.addEventListener("click", () => gifPanel.classList.add("hidden"));
 
         async function loadTrendingGifs() {
-            gifResults.innerHTML = "<p style='grid-column: span 3; text-align:center; font-size:0.8rem; color:var(--text-muted);'>Loading...</p>";
+            gifResults.innerHTML = "<p style='grid-column: span 3; text-align:center; font-size:0.8rem; color:var(--text-muted);'>Syncing GIFs...</p>";
             try {
-                const res = await fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=9&rating=g`);
+                // High performance open source anonymous mirror engine configuration
+                const res = await fetch(`https://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=12&rating=g`);
                 const json = await res.json();
                 renderGifs(json.data);
             } catch(e) {
-                gifResults.innerHTML = "<p style='grid-column: span 3; text-align:center; color:red;'>Giphy connection error.</p>";
+                gifResults.innerHTML = "<p style='grid-column: span 3; text-align:center; color:red; font-size:0.8rem;'>Engine error. Retry.</p>";
             }
         }
 
@@ -1328,16 +1368,16 @@
             if(!queryText) { loadTrendingGifs(); return; }
             gifResults.innerHTML = "<p style='grid-column: span 3; text-align:center; font-size:0.8rem; color:var(--text-muted);'>Searching...</p>";
             try {
-                const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(queryText)}&limit=12&rating=g`);
+                const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(queryText)}&limit=15&rating=g`);
                 const json = await res.json();
                 renderGifs(json.data);
             } catch(e) {}
-        }, 500));
+        }, 400));
 
         function renderGifs(gifDataArray) {
             gifResults.innerHTML = "";
             if(!gifDataArray || gifDataArray.length === 0) {
-                gifResults.innerHTML = "<p style='grid-column: span 3; text-align:center; font-size:0.8rem;'>No GIFs found.</p>";
+                gifResults.innerHTML = "<p style='grid-column: span 3; text-align:center; font-size:0.8rem; color:var(--text-muted);'>No GIFs found.</p>";
                 return;
             }
             gifDataArray.forEach(gif => {
@@ -1361,11 +1401,9 @@
             };
         }
 
-        /* Message Dispatch Form Pipeline */
+        /* Message Dispatch Pipeline */
         messageForm.addEventListener("submit", async (e) => {
             e.preventDefault();
-            
-            // If user clicks send while recording, stop it first to process the voice blob
             if (isVoiceRecording) {
                 if (mediaRecorder && mediaRecorder.state !== "inactive") {
                     mediaRecorder.stop();
@@ -1407,12 +1445,10 @@
                 const targetUserSnap = await getDoc(doc(db, "users", activeChatUserId));
                 if (targetUserSnap.exists()) {
                     const targetData = targetUserSnap.data();
-                    if (targetData.status === "online") {
-                        if (targetData.isTypingTo === currentUser.uid || targetData.activeChatWith === currentUser.uid) {
-                            initialStatus = "seen";
-                        } else {
-                            initialStatus = "delivered";
-                        }
+                    if (targetData.status === "online" && (targetData.isTypingTo === currentUser.uid || targetData.activeChatWith === currentUser.uid)) {
+                        initialStatus = "seen";
+                    } else if (targetData.status === "online") {
+                        initialStatus = "delivered";
                     }
                 }
             } catch(e) {}
@@ -1435,7 +1471,6 @@
 
                 await addDoc(msgCollectionRef, payload);
 
-                // Meta description mapping inside the sidebar row logs
                 let systemLogPreview = textContent;
                 if(customGifUrl) systemLogPreview = "🎬 Sent a GIF";
                 if(customAttachedImageBase64) systemLogPreview = "📷 Sent a Photo";
@@ -1453,7 +1488,8 @@
             }
         }
 
-        function getSingleMessageBubbleHTML(msgData) {
+        /* HTML Generation Node Mapping */
+        function getSingleMessageBubbleHTML(msgData, msgId) {
             const isSent = msgData.senderId === currentUser.uid;
             const rowClass = isSent ? "msg-row sent" : "msg-row received";
 
@@ -1466,24 +1502,28 @@
             if (isSent) {
                 const currentStatus = msgData.status || "sent";
                 if (currentStatus === "seen") {
-                    tickHTML = `<span class="status-tick seen" title="Seen"><i class="fas fa-check-double"></i></span>`;
+                    tickHTML = `<span class="status-tick seen"><i class="fas fa-check-double"></i></span>`;
                 } else if (currentStatus === "delivered") {
-                    tickHTML = `<span class="status-tick delivered" title="Delivered"><i class="fas fa-check-double"></i></span>`;
+                    tickHTML = `<span class="status-tick delivered"><i class="fas fa-check-double"></i></span>`;
                 } else {
-                    tickHTML = `<span class="status-tick sent" title="Sent"><i class="fas fa-check"></i></span>`;
+                    tickHTML = `<span class="status-tick sent"><i class="fas fa-check"></i></span>`;
                 }
             }
 
-            // Media & Audio attachment processing tree block
             let mediaEmbedHTML = "";
             if(msgData.attachedImage) {
                 mediaEmbedHTML = `<img src="${msgData.attachedImage}" class="msg-media-content" alt="Photo" onclick="window.open('${msgData.attachedImage}', '_blank')">`;
             } else if(msgData.gifUrl) {
                 mediaEmbedHTML = `<img src="${msgData.gifUrl}" class="msg-media-content" alt="GIF">`;
             } else if(msgData.voiceNotes) {
+                // UI Fix: Injection of Premium Customized Audio Elements Container
                 mediaEmbedHTML = `
-                    <div class="msg-voice-player">
-                        <audio controls src="${msgData.voiceNotes}"></audio>
+                    <div class="premium-audio-player" id="player-container-${msgId}">
+                        <button type="button" class="audio-control-btn" id="play-btn-${msgId}"><i class="fas fa-play"></i></button>
+                        <div class="audio-timeline-track" id="track-${msgId}">
+                            <div class="audio-timeline-fill" id="fill-${msgId}"></div>
+                        </div>
+                        <span class="audio-time-stamp" id="time-${msgId}">0:00</span>
                     </div>
                 `;
             }
@@ -1505,6 +1545,75 @@
             `;
         }
 
+        /* Custom Audio Controller Instances Generator Engine */
+        function initCustomAudioPlayerInstance(msgId, base64AudioData) {
+            const playBtn = document.getElementById(`play-btn-${msgId}`);
+            const track = document.getElementById(`track-${msgId}`);
+            const fill = document.getElementById(`fill-${msgId}`);
+            const timeLabel = document.getElementById(`time-${msgId}`);
+            
+            if(!playBtn || window.activeAudioNodes.has(msgId)) return;
+
+            const audioObj = new Audio(base64AudioData);
+            window.activeAudioNodes.set(msgId, { audio: audioObj, isPlaying: false });
+
+            // Render native length metadata
+            audioObj.addEventListener("loadedmetadata", () => {
+                timeLabel.innerText = formatAudioDuration(audioObj.duration);
+            });
+
+            playBtn.addEventListener("click", () => {
+                const state = window.activeAudioNodes.get(msgId);
+                if(state.isPlaying) {
+                    audioObj.pause();
+                } else {
+                    // Turn down other active audios
+                    window.activeAudioNodes.forEach((node, id) => {
+                        if(id !== msgId && node.isPlaying) {
+                            node.audio.pause();
+                        }
+                    });
+                    audioObj.play().catch(()=>{});
+                }
+            });
+
+            audioObj.addEventListener("play", () => {
+                window.activeAudioNodes.get(msgId).isPlaying = true;
+                playBtn.innerHTML = `<i class="fas fa-pause"></i>`;
+            });
+
+            audioObj.addEventListener("pause", () => {
+                window.activeAudioNodes.get(msgId).isPlaying = false;
+                playBtn.innerHTML = `<i class="fas fa-play"></i>`;
+            });
+
+            audioObj.addEventListener("timeupdate", () => {
+                const progress = (audioObj.currentTime / audioObj.duration) * 100;
+                fill.style.width = `${progress || 0}%`;
+                timeLabel.innerText = formatAudioDuration(audioObj.currentTime);
+            });
+
+            audioObj.addEventListener("ended", () => {
+                fill.style.width = "0%";
+                timeLabel.innerText = formatAudioDuration(audioObj.duration);
+                playBtn.innerHTML = `<i class="fas fa-play"></i>`;
+                window.activeAudioNodes.get(msgId).isPlaying = false;
+            });
+
+            track.addEventListener("click", (e) => {
+                const rect = track.getBoundingClientRect();
+                const clickPosition = (e.clientX - rect.left) / rect.width;
+                audioObj.currentTime = clickPosition * audioObj.duration;
+            });
+        }
+
+        function formatAudioDuration(secs) {
+            if(isNaN(secs)) return "0:00";
+            const m = Math.floor(secs / 60);
+            const s = Math.floor(secs % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
                 const appContainerEl = document.getElementById("app-container");
@@ -1513,9 +1622,7 @@
                     appContainerEl.style.top = `${window.visualViewport.offsetTop}px`;
                 }
                 if(activeChatUserId) {
-                    setTimeout(() => {
-                        messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
-                    }, 100);
+                    setTimeout(() => { messagesDisplay.scrollTop = messagesDisplay.scrollHeight; }, 100);
                 }
             });
         }
@@ -1527,6 +1634,8 @@
                 activeChatView.classList.add("hidden");
                 welcomeView.classList.remove("hidden");
                 activeChatUserId = null;
+                
+                window.activeAudioNodes.forEach(node => node.audio.pause());
                 if(unsubscribeTargetUserStatus) unsubscribeTargetUserStatus();
             });
         }
@@ -1576,7 +1685,6 @@
                 if (!currentUser) return;
                 setProfileModalMode(false);
                 profileModal.classList.remove("hidden");
-                
                 try {
                     const userDocSnap = await getDoc(doc(db, "users", currentUser.uid));
                     if (userDocSnap.exists()) {
@@ -1596,7 +1704,6 @@
                 if (!activeChatUserId) return;
                 setProfileModalMode(true);
                 profileModal.classList.remove("hidden");
-
                 try {
                     const targetDocSnap = await getDoc(doc(db, "users", activeChatUserId));
                     if (targetDocSnap.exists()) {
@@ -1624,9 +1731,7 @@
                 if (file) {
                     selectedFile = file;
                     const reader = new FileReader();
-                    reader.onload = function(event) {
-                        modalPreviewAvatar.src = event.target.result;
-                    };
+                    reader.onload = function(event) { modalPreviewAvatar.src = event.target.result; };
                     reader.readAsDataURL(file);
                 }
             });
@@ -1639,7 +1744,6 @@
 
                 profileSaveBtn.disabled = true;
                 profileSaveBtn.innerText = "Synchronizing...";
-
                 let downloadURL = modalPreviewAvatar.src; 
 
                 const convertFileToBase64 = (file) => {
@@ -1654,7 +1758,7 @@
                 try {
                     if (selectedFile) {
                         if (selectedFile.size > 2 * 1024 * 1024) {
-                            alert("Image is too large! Please select an image under 2MB.");
+                            alert("Image size must be strictly kept under 2MB.");
                             profileSaveBtn.disabled = false;
                             profileSaveBtn.innerText = "Save Profile";
                             return;
@@ -1681,7 +1785,6 @@
                     showToast("Profile pipeline updated!");
                     profileModal.classList.add("hidden");
                     selectedFile = null;
-
                 } catch (error) {
                     showToast("Sync failed.");
                 } finally {

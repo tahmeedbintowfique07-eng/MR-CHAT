@@ -1748,6 +1748,7 @@ let selectedDiceBet = 100;
 let currentProfileMusic = null;
 let joinedRoomsThisSession = new Set();
 let selectedCoverFile = null;
+let socialProfileUnsub = null;
 
 
         window.activeAudioNodes = new Map();
@@ -3529,6 +3530,7 @@ let selectedCoverFile = null;
                     socialModal.classList.add("hidden");
                     const player = document.getElementById('profile-music-player');
                     if (player) { player.pause(); player.currentTime = 0; }
+                    if (socialProfileUnsub) { socialProfileUnsub(); socialProfileUnsub = null; }
                 }
                 const diceModal = document.getElementById('dice-game-modal');
                 if (diceModal && !diceModal.classList.contains("hidden")) {
@@ -3753,15 +3755,7 @@ function renderBadges(badges, userData) {
     if (allBadges.length === 0) container.innerHTML = '<span style="font-size:0.8rem; color:var(--text-muted);">No badges yet</span>';
 }
 
-async function openSocialProfile(targetUid = null) {
-    const uid = targetUid || (currentUser ? currentUser.uid : null);
-    if (!uid) return;
-    const isOwnProfile = uid === (currentUser ? currentUser.uid : null);
-    let snap;
-    try { snap = await getDoc(doc(db, "users", uid)); } catch(e) { return; }
-    if (!snap || !snap.exists()) return;
-    const data = snap.data();
-
+function renderSocialProfile(data, isOwnProfile) {
     const modal = document.getElementById('social-profile-modal');
     const card = document.getElementById('social-profile-card');
     card.className = `social-profile-card profile-theme-${data.profileTheme || 'blackpink'}`;
@@ -3795,6 +3789,58 @@ async function openSocialProfile(targetUid = null) {
         }
     }
 
+    const musicContainer = document.getElementById('profile-music-container');
+    const musicPlayer = document.getElementById('profile-music-player');
+    const musicToggle = document.getElementById('profile-music-toggle');
+    if (data.profileMusic && data.profileMusic.trim()) {
+        musicContainer.classList.remove('hidden');
+        musicPlayer.src = data.profileMusic;
+        musicToggle.innerHTML = '<i class="fas fa-music"></i> Play Profile Music';
+        musicToggle.onclick = () => {
+            if (musicPlayer.paused) {
+                musicPlayer.play().catch(()=>{});
+                musicToggle.innerHTML = '<i class="fas fa-pause"></i> Pause Music';
+            } else {
+                musicPlayer.pause();
+                musicToggle.innerHTML = '<i class="fas fa-music"></i> Play Profile Music';
+            }
+        };
+    } else {
+        musicContainer.classList.add('hidden');
+        musicPlayer.pause();
+        musicPlayer.src = "";
+    }
+
+    const editBtn = document.getElementById('edit-profile-from-view');
+    const diceBtn = document.getElementById('open-dice-game-btn');
+    editBtn.style.display = isOwnProfile ? 'inline-flex' : 'none';
+    diceBtn.style.display = isOwnProfile ? 'inline-flex' : 'none';
+}
+
+async function openSocialProfile(targetUid = null) {
+    const uid = targetUid || (currentUser ? currentUser.uid : null);
+    if (!uid) return;
+    const isOwnProfile = uid === (currentUser ? currentUser.uid : null);
+
+    // Clean up previous listener
+    if (socialProfileUnsub) { socialProfileUnsub(); socialProfileUnsub = null; }
+
+    let snap;
+    try { snap = await getDoc(doc(db, "users", uid)); } catch(e) { return; }
+    if (!snap || !snap.exists()) return;
+
+    const data = snap.data();
+    renderSocialProfile(data, isOwnProfile);
+
+    // Set up real-time listener so profile auto-updates when data changes
+    socialProfileUnsub = onSnapshot(doc(db, "users", uid), (docSnap) => {
+        if (docSnap.exists()) {
+            renderSocialProfile(docSnap.data(), isOwnProfile);
+        }
+    });
+
+    const modal = document.getElementById('social-profile-modal');
+
     // Profile 3-dot menu dropdown
     const menuTrigger = document.getElementById('profile-menu-trigger');
     const menuDropdown = document.getElementById('profile-menu-dropdown');
@@ -3822,33 +3868,7 @@ async function openSocialProfile(targetUid = null) {
         document.addEventListener('click', () => menuDropdown.classList.add('hidden'));
     }
 
-    const musicContainer = document.getElementById('profile-music-container');
-    const musicPlayer = document.getElementById('profile-music-player');
-    const musicToggle = document.getElementById('profile-music-toggle');
-    if (data.profileMusic && data.profileMusic.trim()) {
-        musicContainer.classList.remove('hidden');
-        musicPlayer.src = data.profileMusic;
-        musicToggle.innerHTML = '<i class="fas fa-music"></i> Play Profile Music';
-        musicToggle.onclick = () => {
-            if (musicPlayer.paused) {
-                musicPlayer.play().catch(()=>{});
-                musicToggle.innerHTML = '<i class="fas fa-pause"></i> Pause Music';
-            } else {
-                musicPlayer.pause();
-                musicToggle.innerHTML = '<i class="fas fa-music"></i> Play Profile Music';
-            }
-        };
-    } else {
-        musicContainer.classList.add('hidden');
-        musicPlayer.pause();
-        musicPlayer.src = "";
-    }
-
     const editBtn = document.getElementById('edit-profile-from-view');
-    const diceBtn = document.getElementById('open-dice-game-btn');
-    editBtn.style.display = isOwnProfile ? 'inline-flex' : 'none';
-    diceBtn.style.display = isOwnProfile ? 'inline-flex' : 'none';
-
     editBtn.onclick = () => {
         modal.classList.add('hidden');
         const player = document.getElementById('profile-music-player');
@@ -3886,18 +3906,12 @@ async function openSocialProfile(targetUid = null) {
             }
         }).catch(() => {});
     };
-    diceBtn.onclick = () => {
-        modal.classList.add('hidden');
-        const player = document.getElementById('profile-music-player');
-        if (player) player.pause();
-        document.getElementById('dice-game-modal').classList.remove('hidden');
-        loadDiceGame();
-    };
 
     document.getElementById('close-social-profile').onclick = () => {
         modal.classList.add('hidden');
         const player = document.getElementById('profile-music-player');
         if (player) { player.pause(); player.currentTime = 0; }
+        if (socialProfileUnsub) { socialProfileUnsub(); socialProfileUnsub = null; }
     };
 
     modal.classList.remove('hidden');

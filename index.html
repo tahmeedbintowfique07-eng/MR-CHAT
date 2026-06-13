@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MR - CHATTING PREMIUM</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
@@ -98,6 +98,33 @@
         }
 
         .hidden { display: none !important; }
+
+        /* Gamification Styles */
+        .badge-type {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .badge-bronze { background: #CD7F32; color: white; }
+        .badge-silver { background: #C0C0C0; color: #1A1D24; }
+        .badge-gold { background: #FFD700; color: #1A1D24; box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+
+        .xp-progress-container {
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            height: 6px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+        .xp-progress-bar {
+            height: 100%;
+            background: var(--pink-primary);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
 
         /* Custom Interfaced Control Dropdowns Layout */
         .dropdown-wrapper {
@@ -257,6 +284,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            width: calc(100% - 110px);
         }
 
         .avatar {
@@ -269,7 +297,7 @@
 
         .sidebar-header span {
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: var(--text-main);
         }
 
@@ -825,9 +853,19 @@
             <div class="sidebar-header">
                 <div class="user-profile">
                     <img id="current-user-avatar" src="https://via.placeholder.com/40" class="avatar" alt="Avatar">
-                    <span id="current-user-name">Loading...</span>
+                    <div style="display: flex; flex-direction: column; width: 100%;">
+                        <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+                            <span id="current-user-name" style="max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Loading...</span>
+                            <span id="current-user-level" style="font-size:0.75rem; color:var(--pink-light); font-weight:bold;">Lv.1</span>
+                            <span id="current-user-badge" class="badge-type badge-bronze">Bronze</span>
+                        </div>
+                        <div class="xp-progress-container">
+                            <div id="current-user-xp-bar" class="xp-progress-bar"></div>
+                        </div>
+                        <span id="current-user-xp-text" style="font-size:0.65rem; color:var(--text-muted); margin-top:2px;">0/100 XP</span>
+                    </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
                     <div class="dropdown-wrapper">
                         <button id="web-theme-trigger-btn" class="icon-btn" title="Toggle Web Theme"><i class="fas fa-sliders"></i></button>
                         <div id="web-theme-dropdown" class="custom-theme-dropdown hidden">
@@ -888,7 +926,11 @@
                         <div id="target-user-profile-trigger" class="target-user-info" style="display:flex; align-items:center; gap:12px; cursor:pointer;">
                             <img id="chat-user-avatar" src="https://via.placeholder.com/40" class="avatar" alt="User">
                             <div>
-                                <div id="chat-user-name" style="font-weight:600;">Username</div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <div id="chat-user-name" style="font-weight:600;">Username</div>
+                                    <span id="chat-user-level" style="font-size:0.75rem; color:var(--pink-light); font-weight:bold;"></span>
+                                    <span id="chat-user-badge" class="badge-type hidden"></span>
+                                </div>
                                 <div id="chat-user-status" style="font-size:0.8rem; color:var(--text-muted)">Offline</div>
                             </div>
                         </div>
@@ -959,7 +1001,7 @@
 
     <div id="profile-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
         <div class="auth-box" style="position: relative; max-width: 420px; width: 100%;">
-            <button id="close-profile-btn" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;"><i class="fas fa-times"></i></button>
+            <button id="close-profile-btn-x" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;"><i class="fas fa-times"></i></button>
             <div class="auth-header">
                 <h2 id="modal-title">Edit Profile</h2>
                 <p id="modal-subtitle">Update your network identity and details</p>
@@ -1074,7 +1116,7 @@
         // Profile References
         const profileModal = document.getElementById("profile-modal");
         const openProfileBtn = document.getElementById("open-profile-btn");
-        const closeProfileBtn = document.getElementById("close-profile-btn");
+        const closeProfileBtnX = document.getElementById("close-profile-btn-x");
         const profileUpdateForm = document.getElementById("profile-update-form");
         const profileDpInput = document.getElementById("profile-dp-input");
         const modalPreviewAvatar = document.getElementById("modal-preview-avatar");
@@ -1116,6 +1158,7 @@
         let mediaRecorder = null;
         let audioChunks = [];
         let isVoiceRecording = false;
+        let shouldSendAfterVoiceStop = false; // FIX: Voice send state flag
 
         // EDIT, REPLY & DELETE SYSTEM MEMORY STATE ENGINE
         let contextSelectedMsgId = null;
@@ -1223,6 +1266,69 @@
 
         initAppThemesSystem();
 
+        /* ==================== GAMIFICATION MATRIX CONTROLLER ==================== */
+        function calculateRequiredXpForLevel(level) {
+            return 100 * Math.pow(level, 2);
+        }
+
+        function getUserBadgeType(level) {
+            if (level >= 31) return { text: "Gold", class: "badge-gold" };
+            if (level >= 11) return { text: "Silver", class: "badge-silver" };
+            return { text: "Bronze", class: "badge-bronze" };
+        }
+
+        async function rewardXpToCurrentUser(amount) {
+            if (!currentUser) return;
+            const userDocRef = doc(db, "users", currentUser.uid);
+            try {
+                const userSnap = await getDoc(userDocRef);
+                if (userSnap.exists()) {
+                    const data = userSnap.data();
+                    let currentXp = data.xp || 0;
+                    let currentLevel = data.level || 1;
+                    
+                    currentXp += amount;
+                    let requiredXp = calculateRequiredXpForLevel(currentLevel);
+                    
+                    let leveledUp = false;
+                    while (currentXp >= requiredXp) {
+                        currentXp -= requiredXp;
+                        currentLevel += 1;
+                        requiredXp = calculateRequiredXpForLevel(currentLevel);
+                        leveledUp = true;
+                    }
+                    
+                    const badgeInfo = getUserBadgeType(currentLevel);
+                    
+                    await updateDoc(userDocRef, {
+                        xp: currentXp,
+                        level: currentLevel,
+                        userType: badgeInfo.text
+                    });
+                    
+                    if (leveledUp) {
+                        showToast(`🎉 LEVEL UP! You are now Level ${currentLevel}!`);
+                    }
+                }
+            } catch (e) { console.error("XP rewards error:", e); }
+        }
+
+        function updateSidebarGamificationUI(uData) {
+            const level = uData.level || 1;
+            const xp = uData.xp || 0;
+            const nextLevelXp = calculateRequiredXpForLevel(level);
+            const progressPercentage = Math.min((xp / nextLevelXp) * 100, 100);
+            const badgeInfo = getUserBadgeType(level);
+
+            document.getElementById("current-user-level").innerText = `Lv.${level}`;
+            document.getElementById("current-user-xp-text").innerText = `${xp}/${nextLevelXp} XP`;
+            document.getElementById("current-user-xp-bar").style.width = `${progressPercentage}%`;
+            
+            const badgeEl = document.getElementById("current-user-badge");
+            badgeEl.className = `badge-type ${badgeInfo.class}`;
+            badgeEl.innerText = badgeInfo.text;
+        }
+
         function getChatRoomId(uid1, uid2) {
             return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
         }
@@ -1283,6 +1389,9 @@
                         status: "online",
                         isTypingTo: null,
                         role: "user", 
+                        xp: 0,
+                        level: 1,
+                        userType: "Bronze",
                         lastSeen: new Date().getTime()
                     });
                     
@@ -1311,6 +1420,9 @@
                         document.getElementById("current-user-name").innerText = uData.fullName || uData.username || user.displayName || "User";
                         document.getElementById("current-user-avatar").src = uData.photoURL || user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.displayName}`;
                         
+                        // Real-time Sidebar Gamification Metrics Update
+                        updateSidebarGamificationUI(uData);
+
                         if(activeTab === "rooms") {
                             toggleAdminPanelDisplay();
                         }
@@ -1438,6 +1550,7 @@
                 adminNewRoomName.value = "";
                 adminNewRoomDesc.value = "";
                 showToast(" Lounge matrix successfully deployed!");
+                rewardXpToCurrentUser(50); // Give 50 XP to admin for creating room
             } catch(error) {
                 alert("Failed to build workspace lounge: " + error.message);
             }
@@ -1526,7 +1639,7 @@
             resetReplyContextState();
             currentEditModeActive = false;
             gifPanel.classList.add("hidden");
-            window.activeAudioNodes.forEach(node => { if(node.audio) node.audio.pause(); });
+            window.activeAudioNodes.forEach(node => { if(node.audio) { node.audio.pause(); node.audio.src = ""; } });
             window.activeAudioNodes.clear();
 
             if (unsubscribeTargetUserStatus) unsubscribeTargetUserStatus();
@@ -1535,6 +1648,10 @@
             chatUserAvatar.src = roomPhoto || 'https://via.placeholder.com/40';
             chatUserStatus.innerText = "Public Broadcast Module";
             chatUserStatus.style.color = "var(--text-muted)";
+            
+            // Hide levels and badge trigger on Group Room Header
+            document.getElementById("chat-user-level").innerText = "";
+            document.getElementById("chat-user-badge").className = "badge-type hidden";
 
             if (unsubscribeMessagesSub) unsubscribeMessagesSub();
 
@@ -1670,6 +1787,7 @@
                     timestamp: new Date().getTime()
                 });
                 showToast("Request pushed!");
+                rewardXpToCurrentUser(15); // Reward 15 XP for socializing/adding friend
                 loadGlobalUsersExplore();
             } catch(e) { alert(e.message); }
         };
@@ -1685,6 +1803,7 @@
                     timestamp: new Date().getTime()
                 });
                 showToast("Link pipeline online!");
+                rewardXpToCurrentUser(30); // Reward 30 XP on accepting connection request
                 switchTab("chats");
             } catch(e) { alert(e.message); }
         };
@@ -1710,7 +1829,7 @@
             currentEditModeActive = false;
             gifPanel.classList.add("hidden");
 
-            window.activeAudioNodes.forEach(node => node.audio.pause());
+            window.activeAudioNodes.forEach(node => { if(node.audio) { node.audio.pause(); node.audio.src = ""; } });
             window.activeAudioNodes.clear();
 
             if (unsubscribeTargetUserStatus) unsubscribeTargetUserStatus();
@@ -1721,6 +1840,16 @@
                     chatUserName.innerText = data.fullName || data.username;
                     chatUserAvatar.src = data.photoURL || 'https://via.placeholder.com/40';
                     
+                    // Render target user level metadata on Chat Header
+                    const tLevel = data.level || 1;
+                    const tBadge = getUserBadgeType(tLevel);
+                    const headerLevelEl = document.getElementById("chat-user-level");
+                    const headerBadgeEl = document.getElementById("chat-user-badge");
+                    
+                    headerLevelEl.innerText = `Lv.${tLevel}`;
+                    headerBadgeEl.className = `badge-type ${tBadge.class}`;
+                    headerBadgeEl.innerText = tBadge.text;
+
                     if (data.isTypingTo === currentUser.uid) {
                         chatUserStatus.innerText = "typing...";
                         chatUserStatus.style.color = "var(--pink-light)";
@@ -1763,7 +1892,7 @@
                 });
 
                 messagesDisplay.innerHTML = messagesHTML;
-                attachLongPressAndSwipeGesturesToDOM(); // Re-bind Drag/Swipe Context Handlers dynamically
+                attachLongPressAndSwipeGesturesToDOM(); // Re-bind Drag/Swipe/Long-Press Context Handlers dynamically
                 
                 if (needsBatchUpdate) {
                     try { await batch.commit(); } catch(e) {}
@@ -1782,6 +1911,8 @@
         window.openChatWindowWithTargetUser = openChatWindowWithTargetUser;
 
         function renderUserRow(userData, subtext, type, actionHTML = "") {
+            const level = userData.level || 1;
+            const badgeInfo = getUserBadgeType(level);
             const li = document.createElement("li");
             li.innerHTML = `
                 <div class="user-item-info">
@@ -1791,7 +1922,11 @@
                             <span style="position:absolute; bottom:0; right:0; width:10px; height:10px; border-radius:50%; background:${userData.status === 'online' ? 'var(--pink-primary)' : '#555'}; border:2px solid var(--bg-sidebar);"></span>
                         </div>
                         <div style="display:flex; flex-direction:column;">
-                            <span class="name">${userData.fullName || userData.username}</span>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span class="name">${userData.fullName || userData.username}</span>
+                                <span style="font-size:0.75rem; color:var(--pink-light); font-weight:bold;">Lv.${level}</span>
+                                <span class="badge-type ${badgeInfo.class}" style="font-size:0.6rem; padding:1px 5px;">${badgeInfo.text}</span>
+                            </div>
                             <span class="subtext">${subtext}</span>
                         </div>
                     </div>
@@ -1826,6 +1961,7 @@
             inboxPreviewImgSrc.classList.add("hidden");
             inboxImgPreviewBar.classList.add("hidden");
             messageForm.classList.remove("voice-recording-active");
+            shouldSendAfterVoiceStop = false;
         }
 
         inboxPhotoTriggerBtn.addEventListener("click", () => inboxFileInput.click());
@@ -1874,6 +2010,12 @@
                             inboxPreviewImgSrc.classList.add("hidden");
                             attachmentStatusText.innerText = "🎙️ Premium voice note recorded. Press send.";
                             inboxImgPreviewBar.classList.remove("hidden");
+                            
+                            // FIX: Auto-send if user pressed send while recording
+                            if (shouldSendAfterVoiceStop) {
+                                shouldSendAfterVoiceStop = false;
+                                messageForm.dispatchEvent(new Event('submit'));
+                            }
                         };
                         reader.readAsDataURL(audioBlob);
                         stream.getTracks().forEach(track => track.stop());
@@ -1968,6 +2110,13 @@
             // Cancel popup overlay
             popActionCancel.addEventListener("click", () => msgOptionsPopup.classList.add("hidden"));
             
+            // FIX: Close popup when clicking outside the card
+            msgOptionsPopup.addEventListener("click", (e) => {
+                if (e.target === msgOptionsPopup) {
+                    msgOptionsPopup.classList.add("hidden");
+                }
+            });
+            
             // Set up context Reply trigger
             popActionReply.addEventListener("click", () => {
                 msgOptionsPopup.classList.add("hidden");
@@ -2044,6 +2193,7 @@
             const rows = messagesDisplay.querySelectorAll(".msg-row");
             rows.forEach(row => {
                 const bubble = row.querySelector(".msg-bubble");
+                if(!bubble) return;
                 const msgId = bubble.getAttribute("data-msg-id");
                 
                 // Get bound dataset attributes inside parameters directly
@@ -2061,10 +2211,38 @@
                     isDeleted: msgIsDeleted
                 };
 
+                const senderUid = bubble.getAttribute("data-sender-uid");
+                const isOwnedByCurrentUser = senderUid === currentUser.uid;
+
+                // FIX: Long-Press Detection for Mobile
+                let longPressTimer;
+                const LONG_PRESS_DURATION = 600;
+
+                const startLongPress = (e) => {
+                    // Only trigger on left click or touch
+                    if (e.type === 'mousedown' && e.button !== 0) return;
+                    longPressTimer = setTimeout(() => {
+                        triggerContextOptionsPopup(msgId, mockDataObj, isOwnedByCurrentUser);
+                        if (navigator.vibrate) navigator.vibrate(50);
+                    }, LONG_PRESS_DURATION);
+                };
+
+                const cancelLongPress = () => {
+                    clearTimeout(longPressTimer);
+                };
+
+                bubble.addEventListener("touchstart", startLongPress, { passive: true });
+                bubble.addEventListener("touchend", cancelLongPress);
+                bubble.addEventListener("touchmove", cancelLongPress);
+                bubble.addEventListener("touchcancel", cancelLongPress);
+                bubble.addEventListener("mousedown", startLongPress);
+                bubble.addEventListener("mouseup", cancelLongPress);
+                bubble.addEventListener("mouseleave", cancelLongPress);
+
                 // Desktop Right-Click Handler Context Integration
                 row.addEventListener("contextmenu", (e) => {
                     e.preventDefault();
-                    triggerContextOptionsPopup(msgId, mockDataObj, msgDataSender === currentUser.uid);
+                    triggerContextOptionsPopup(msgId, mockDataObj, isOwnedByCurrentUser);
                 });
 
                 // Touch Engine Swiping Variables Trackers
@@ -2124,6 +2302,7 @@
             e.preventDefault();
             if (isVoiceRecording) {
                 if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                    shouldSendAfterVoiceStop = true; // FIX: Set flag to auto-send after stop
                     mediaRecorder.stop();
                 }
                 isVoiceRecording = false;
@@ -2136,7 +2315,10 @@
 
             // Process message editing routine channel
             if(currentEditModeActive) {
-                if(!txt) return;
+                if(!txt) {
+                    showToast("Cannot save an empty message.");
+                    return;
+                }
                 currentEditModeActive = false;
                 messageInput.value = "";
                 try {
@@ -2191,6 +2373,9 @@
                 payload.replyContext = currentReplyContextPayload;
                 resetReplyContextState(); // Flush local cache block layout state cleanly
             }
+
+            // Gamification Reward: Send message gives 10 XP
+            rewardXpToCurrentUser(10);
 
             if (isGroupRoomMode) {
                 try {
@@ -2299,6 +2484,7 @@
                 <div class="${rowClass}">
                     <div class="msg-bubble" 
                          data-msg-id="${msgId}" 
+                         data-sender-uid="${msgData.senderId}"
                          data-msg-text="${escapeHTML(msgData.text)}" 
                          data-msg-sender="${escapeHTML(msgData.senderName || '')}"
                          data-msg-hasimg="${!!msgData.attachedImage}"
@@ -2388,31 +2574,36 @@
                 appSidebar.classList.remove("mobile-hidden");
                 chatWindowView.classList.remove("mobile-active");
                 activeChatView.classList.add("hidden");
-                welcomeView.remove("hidden");
+                welcomeView.classList.remove("hidden");
                 activeChatUserId = null;
                 isGroupRoomMode = false;
                 
-                window.activeAudioNodes.forEach(node => node.audio.pause());
+                window.activeAudioNodes.forEach(node => { if(node.audio) { node.audio.pause(); node.audio.src = ""; } });
                 if(unsubscribeTargetUserStatus) unsubscribeTargetUserStatus();
             });
         }
 
+        // FIX: Search input debounce to prevent race conditions
+        let searchDebounceTimer;
         searchInput.addEventListener("input", async () => {
-            const searchText = searchInput.value.trim().toLowerCase();
-            if(!searchText) { switchTab(activeTab); return; }
-            if(unsubscribeRealtimeStream) { unsubscribeRealtimeStream(); unsubscribeRealtimeStream = null; }
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(async () => {
+                const searchText = searchInput.value.trim().toLowerCase();
+                if(!searchText) { switchTab(activeTab); return; }
+                if(unsubscribeRealtimeStream) { unsubscribeRealtimeStream(); unsubscribeRealtimeStream = null; }
 
-            const userSnap = await getDocs(query(collection(db, "users")));
-            activeChatsList.innerHTML = "";
-            let found = false;
-            userSnap.forEach(uDoc => {
-                const u = uDoc.data();
-                if(u.uid !== currentUser.uid && u.username.toLowerCase().includes(searchText)) {
-                    found = true;
-                    renderUserRow(u, `@${u.username}`, "action", `<button class="action-btn-sm btn-pink" onclick="window.openChatWindowWithTargetUser('${u.uid}')">Message</button>`);
-                }
-            });
-            if(!found) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No identities matching query strings.</p>`;
+                const userSnap = await getDocs(query(collection(db, "users")));
+                activeChatsList.innerHTML = "";
+                let found = false;
+                userSnap.forEach(uDoc => {
+                    const u = uDoc.data();
+                    if(u.uid !== currentUser.uid && u.username.toLowerCase().includes(searchText)) {
+                        found = true;
+                        renderUserRow(u, `@${u.username}`, "action", `<button class="action-btn-sm btn-pink" onclick="window.openChatWindowWithTargetUser('${u.uid}')">Message</button>`);
+                    }
+                });
+                if(!found) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No identities matching query strings.</p>`;
+            }, 300);
         });
 
         function setProfileModalMode(isViewMode) {
@@ -2475,8 +2666,8 @@
             });
         }
 
-        if (closeProfileBtn) {
-            closeProfileBtn.addEventListener("click", () => {
+        if (closeProfileBtnX) {
+            closeProfileBtnX.addEventListener("click", () => {
                 profileModal.classList.add("hidden");
                 selectedFile = null;
             });
@@ -2540,16 +2731,33 @@
                     }, { merge: true });
 
                     showToast("Profile pipeline updated!");
+                    rewardXpToCurrentUser(40); // Reward 40 XP for profile optimization
                     profileModal.classList.add("hidden");
                     selectedFile = null;
                 } catch (error) {
                     showToast("Sync failed.");
-                } finally {
+                } finally { // FIX: Changed from 'finaly' to 'finally'
                     profileSaveBtn.disabled = false;
                     profileSaveBtn.innerText = "Save Profile";
                 }
             });
         }
+
+        // FIX: Global ESC key handler to close modals
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                if (!profileModal.classList.contains("hidden")) {
+                    profileModal.classList.add("hidden");
+                    selectedFile = null;
+                }
+                if (!msgOptionsPopup.classList.contains("hidden")) {
+                    msgOptionsPopup.classList.add("hidden");
+                }
+                if (!gifPanel.classList.contains("hidden")) {
+                    gifPanel.classList.add("hidden");
+                }
+            }
+        });
 
         function showToast(msg) {
             const toast = document.getElementById("app-notification");

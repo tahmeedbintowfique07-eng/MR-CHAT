@@ -2032,7 +2032,14 @@ let socialProfileUnsub = null;
                         currentUserRole = uData.role || "user"; 
                         document.getElementById("current-user-name").innerText = uData.fullName || uData.username || user.displayName || "User";
                         document.getElementById("current-user-avatar").src = uData.photoURL || user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.displayName}`;
-                        document.getElementById("current-user-avatar").onclick = () => openSocialProfile();
+                        const sidebarAvatar = document.getElementById("current-user-avatar");
+                        if (sidebarAvatar) {
+                            sidebarAvatar.style.cursor = 'pointer';
+                            sidebarAvatar.onclick = () => {
+                                console.log('[Profile] Sidebar avatar clicked');
+                                openSocialProfile();
+                            };
+                        }
 
                         updateSidebarGamificationUI(uData);
                         updateSidebarGoldDisplay(uData.gold || 0);
@@ -3367,10 +3374,13 @@ let socialProfileUnsub = null;
         }
 
         if (targetUserProfileTrigger) {
-            targetUserProfileTrigger.addEventListener("click", async () => {
+            targetUserProfileTrigger.addEventListener("click", () => {
+                console.log('[Profile] Chat header clicked, activeChatUserId:', activeChatUserId, 'isGroupRoomMode:', isGroupRoomMode);
                 if (!activeChatUserId || isGroupRoomMode) return;
                 openSocialProfile(activeChatUserId);
             });
+        } else {
+            console.error('[Profile] targetUserProfileTrigger not found');
         }
 
         if (closeProfileBtnX) {
@@ -3759,806 +3769,225 @@ function renderBadges(badges, userData) {
 }
 
 function renderSocialProfile(data, isOwnProfile) {
-    const modal = document.getElementById('social-profile-modal');
-    if (!modal) return;
-    const card = document.getElementById('social-profile-card');
-    if (!card) return;
-    card.className = `social-profile-card profile-theme-${data.profileTheme || 'blackpink'}`;
-    card.style.fontFamily = getFontFamily(data.fontStyle);
+    try {
+        const modal = document.getElementById('social-profile-modal');
+        if (!modal) { console.error('social-profile-modal not found'); return; }
+        const card = document.getElementById('social-profile-card');
+        if (!card) { console.error('social-profile-card not found'); return; }
+        card.className = 'social-profile-card profile-theme-' + (data.profileTheme || 'blackpink');
+        card.style.fontFamily = getFontFamily(data.fontStyle || 'default');
 
-    const avatar = document.getElementById('social-profile-avatar');
-    if (avatar) avatar.src = data.photoURL || 'https://via.placeholder.com/110';
+        const avatar = document.getElementById('social-profile-avatar');
+        if (avatar) avatar.src = data.photoURL || 'https://via.placeholder.com/110';
 
-    const frameOverlay = document.getElementById('social-profile-frame');
-    const borderOverlay = document.getElementById('social-avatar-border');
-    if (frameOverlay) frameOverlay.className = `profile-frame-overlay ${data.profileFrame !== 'none' && data.profileFrame ? 'profile-frame-' + data.profileFrame : ''}`;
-    if (borderOverlay) borderOverlay.className = `avatar-border-overlay ${data.avatarBorder !== 'none' && data.avatarBorder ? 'avatar-border-' + data.avatarBorder : ''}`;
+        const frameOverlay = document.getElementById('social-profile-frame');
+        const borderOverlay = document.getElementById('social-avatar-border');
+        if (frameOverlay) frameOverlay.className = 'profile-frame-overlay ' + (data.profileFrame !== 'none' && data.profileFrame ? 'profile-frame-' + data.profileFrame : '');
+        if (borderOverlay) borderOverlay.className = 'avatar-border-overlay ' + (data.avatarBorder !== 'none' && data.avatarBorder ? 'avatar-border-' + data.avatarBorder : '');
 
-    const nameEl = document.getElementById('social-profile-name');
-    if (nameEl) nameEl.innerText = data.fullName || data.username || 'User';
-    renderBadges(data.badges || [], data);
-    const bioEl = document.getElementById('social-profile-bio');
-    if (bioEl) bioEl.innerText = data.bio || "No bio yet.";
+        const nameEl = document.getElementById('social-profile-name');
+        if (nameEl) nameEl.innerText = data.fullName || data.username || 'User';
+        renderBadges(data.badges || [], data);
+        const bioEl = document.getElementById('social-profile-bio');
+        if (bioEl) bioEl.innerText = data.bio || 'No bio yet.';
 
-    const friendsEl = document.getElementById('stat-friends');
-    if (friendsEl) friendsEl.innerText = data.friendsCount || 0;
-    const roomsEl = document.getElementById('stat-rooms');
-    if (roomsEl) roomsEl.innerText = data.roomsJoined || 0;
+        const friendsEl = document.getElementById('stat-friends');
+        if (friendsEl) friendsEl.innerText = data.friendsCount || 0;
+        const roomsEl = document.getElementById('stat-rooms');
+        if (roomsEl) roomsEl.innerText = data.roomsJoined || 0;
 
-    const goldEl = document.getElementById('social-profile-gold');
-    if (goldEl) goldEl.innerText = (data.gold || 0).toLocaleString();
+        const goldEl = document.getElementById('social-profile-gold');
+        if (goldEl) goldEl.innerText = ((data.gold || 0)).toLocaleString();
 
-    const createdEl = document.getElementById('social-profile-created');
-    if (createdEl) {
-        const created = data.accountCreated ? new Date(data.accountCreated).toLocaleDateString() : 'Unknown';
-        createdEl.innerText = `Joined ${created}`;
-    }
-
-    const bannerEl = document.querySelector('#social-profile-card .profile-banner');
-    if (bannerEl) {
-        if (data.coverPhoto) {
-            bannerEl.style.background = `url('${data.coverPhoto}') center/cover no-repeat`;
-        } else {
-            bannerEl.style.background = 'linear-gradient(135deg, var(--pink-primary), #FF0055)';
+        const createdEl = document.getElementById('social-profile-created');
+        if (createdEl) {
+            const created = data.accountCreated ? new Date(data.accountCreated).toLocaleDateString() : 'Unknown';
+            createdEl.innerText = 'Joined ' + created;
         }
-    }
 
-    const musicContainer = document.getElementById('profile-music-container');
-    const musicPlayer = document.getElementById('profile-music-player');
-    const musicToggle = document.getElementById('profile-music-toggle');
-    if (data.profileMusic && data.profileMusic.trim()) {
-        if (musicContainer) musicContainer.classList.remove('hidden');
-        if (musicPlayer) {
-            musicPlayer.src = data.profileMusic;
-            musicToggle.innerHTML = '<i class="fas fa-music"></i> Play Profile Music';
-            musicToggle.onclick = () => {
-                if (musicPlayer.paused) {
-                    musicPlayer.play().catch(()=>{});
-                    musicToggle.innerHTML = '<i class="fas fa-pause"></i> Pause Music';
-                } else {
-                    musicPlayer.pause();
+        const bannerEl = document.querySelector('#social-profile-card .profile-banner');
+        if (bannerEl) {
+            if (data.coverPhoto) {
+                bannerEl.style.background = "url('" + data.coverPhoto + "') center/cover no-repeat";
+            } else {
+                bannerEl.style.background = 'linear-gradient(135deg, var(--pink-primary), #FF0055)';
+            }
+        }
+
+        const musicContainer = document.getElementById('profile-music-container');
+        const musicPlayer = document.getElementById('profile-music-player');
+        const musicToggle = document.getElementById('profile-music-toggle');
+        if (data.profileMusic && data.profileMusic.trim()) {
+            if (musicContainer) musicContainer.classList.remove('hidden');
+            if (musicPlayer) {
+                musicPlayer.src = data.profileMusic;
+                if (musicToggle) {
                     musicToggle.innerHTML = '<i class="fas fa-music"></i> Play Profile Music';
-                }
-            };
-        }
-    } else {
-        if (musicContainer) musicContainer.classList.add('hidden');
-        if (musicPlayer) { musicPlayer.pause(); musicPlayer.src = ""; }
-    }
-
-    const editBtn = document.getElementById('edit-profile-from-view');
-    const diceBtn = document.getElementById('open-dice-game-btn');
-    if (editBtn) editBtn.style.display = isOwnProfile ? 'inline-flex' : 'none';
-    if (diceBtn) diceBtn.style.display = isOwnProfile ? 'inline-flex' : 'none';
-}
-
-async function openSocialProfile(targetUid = null) {
-    const uid = targetUid || (currentUser ? currentUser.uid : null);
-    if (!uid) return;
-    const isOwnProfile = uid === (currentUser ? currentUser.uid : null);
-
-    // Clean up previous listener
-    if (socialProfileUnsub) { socialProfileUnsub(); socialProfileUnsub = null; }
-
-    let snap;
-    try { snap = await getDoc(doc(db, "users", uid)); } catch(e) { return; }
-    if (!snap || !snap.exists()) return;
-
-    const data = snap.data();
-    renderSocialProfile(data, isOwnProfile);
-
-    // Set up real-time listener so profile auto-updates when data changes
-    socialProfileUnsub = onSnapshot(doc(db, "users", uid), (docSnap) => {
-        if (docSnap.exists()) {
-            renderSocialProfile(docSnap.data(), isOwnProfile);
-        }
-    });
-
-    const modal = document.getElementById('social-profile-modal');
-
-    // Profile 3-dot menu dropdown
-    const menuTrigger = document.getElementById('profile-menu-trigger');
-    const menuDropdown = document.getElementById('profile-menu-dropdown');
-    if (menuTrigger && menuDropdown) {
-        menuTrigger.onclick = (e) => {
-            e.stopPropagation();
-            menuDropdown.classList.toggle('hidden');
-        };
-        document.getElementById('menu-gold-leaderboard').onclick = () => {
-            menuDropdown.classList.add('hidden');
-            modal.classList.add('hidden');
-            const player = document.getElementById('profile-music-player');
-            if (player) player.pause();
-            loadGoldLeaderboard();
-            document.getElementById('gold-leaderboard-modal').classList.remove('hidden');
-        };
-        document.getElementById('menu-level-leaderboard').onclick = () => {
-            menuDropdown.classList.add('hidden');
-            modal.classList.add('hidden');
-            const player = document.getElementById('profile-music-player');
-            if (player) player.pause();
-            loadLevelLeaderboard();
-            document.getElementById('level-leaderboard-modal').classList.remove('hidden');
-        };
-        document.addEventListener('click', () => menuDropdown.classList.add('hidden'));
-    }
-
-    const editBtn = document.getElementById('edit-profile-from-view');
-    editBtn.onclick = () => {
-        modal.classList.add('hidden');
-        const player = document.getElementById('profile-music-player');
-        if (player) player.pause();
-        // Open edit modal directly
-        setProfileModalMode(false);
-        profileModal.classList.remove('hidden');
-        // Load current user data into edit form
-        getDoc(doc(db, "users", currentUser.uid)).then(snap => {
-            if (snap.exists()) {
-                const u = snap.data();
-                profileName.value = u.fullName || currentUser.displayName || "";
-                profileAge.value = u.age || "";
-                profileFrom.value = u.from || "";
-                profileProfession.value = u.profession || "";
-                modalPreviewAvatar.src = u.photoURL || currentUser.photoURL || "https://via.placeholder.com/90";
-                document.getElementById('profile-bio').value = u.bio || "";
-                document.getElementById('profile-frame').value = u.profileFrame || "none";
-                document.getElementById('profile-border').value = u.avatarBorder || "none";
-                document.getElementById('profile-theme').value = u.profileTheme || "blackpink";
-                document.getElementById('profile-music').value = u.profileMusic || "";
-                document.getElementById('profile-font').value = u.fontStyle || "default";
-                const bioWords = (u.bio || "").trim().split(/\s+/).filter(w => w.length > 0).length;
-                const wcEl = document.getElementById('bio-word-count');
-                if (wcEl) wcEl.innerText = bioWords;
-                const coverContainer = document.getElementById('cover-preview-container');
-                const coverPlaceholder = document.getElementById('cover-placeholder-text');
-                if (coverContainer && u.coverPhoto) {
-                    coverContainer.style.backgroundImage = `url('${u.coverPhoto}')`;
-                    if (coverPlaceholder) coverPlaceholder.style.display = 'none';
-                } else if (coverContainer) {
-                    coverContainer.style.backgroundImage = '';
-                    if (coverPlaceholder) coverPlaceholder.style.display = 'block';
-                }
-            }
-        }).catch(() => {});
-    };
-
-    document.getElementById('close-social-profile').onclick = () => {
-        modal.classList.add('hidden');
-        const player = document.getElementById('profile-music-player');
-        if (player) { player.pause(); player.currentTime = 0; }
-        if (socialProfileUnsub) { socialProfileUnsub(); socialProfileUnsub = null; }
-    };
-
-    modal.classList.remove('hidden');
-}
-
-// Dice Game
-async function loadDiceGame() {
-    if (!currentUser) return;
-    const snap = await getDoc(doc(db, "users", currentUser.uid));
-    const data = snap.data();
-    document.getElementById('dice-gold-balance').innerText = (data.gold || 0).toLocaleString();
-    loadDiceHistory();
-}
-
-async function loadDiceHistory() {
-    const q = query(collection(db, "dice_games"), where("userId", "==", currentUser.uid), orderBy("timestamp", "desc"));
-    const snap = await getDocs(q);
-    const container = document.getElementById('dice-history');
-    container.innerHTML = "";
-    if (snap.empty) {
-        container.innerHTML = "<p style='text-align:center; opacity:0.5; padding: 10px;'>No games yet</p>";
-        return;
-    }
-    snap.forEach(d => {
-        const data = d.data();
-        const net = data.winnings - data.bet;
-        const color = net > 0 ? '#34C759' : (net < 0 ? '#FF3B30' : 'var(--text-muted)');
-        const sign = net > 0 ? '+' : '';
-        container.innerHTML += `<div class="dice-history-item"><span>Bet ${data.bet} | Roll ${data.roll}</span><span style="color:${color}; font-weight:600;">${sign}${net}</span></div>`;
-    });
-}
-
-async function playDiceGame() {
-    if (!currentUser) return;
-    const bet = selectedDiceBet;
-    const userRef = doc(db, "users", currentUser.uid);
-    const snap = await getDoc(userRef);
-    const gold = snap.data().gold || 0;
-
-    if (gold < bet) {
-        showToast("💰 Not enough Gold!");
-        return;
-    }
-
-    const diceEl = document.getElementById('dice-1');
-    const resultEl = document.getElementById('dice-result');
-    const rollBtn = document.getElementById('roll-dice-btn');
-
-    rollBtn.disabled = true;
-    diceEl.classList.add('rolling');
-    resultEl.innerText = "Rolling...";
-    resultEl.style.color = "";
-
-    await updateDoc(userRef, { gold: increment(-bet) });
-    document.getElementById('dice-gold-balance').innerText = (gold - bet).toLocaleString();
-
-    setTimeout(async () => {
-        const roll = Math.floor(Math.random() * 6) + 1;
-        diceEl.classList.remove('rolling');
-        diceEl.querySelector('.dice-face').innerText = roll;
-
-        let winnings = 0;
-        if (roll <= 2) winnings = 0;
-        else if (roll <= 4) winnings = bet;
-        else if (roll === 5) winnings = bet * 2;
-        else winnings = bet * 3;
-
-        const netProfit = winnings - bet;
-
-        if (winnings > 0) {
-            await updateDoc(userRef, { gold: increment(winnings) });
-            document.getElementById('dice-gold-balance').innerText = (gold - bet + winnings).toLocaleString();
-        }
-
-        await addDoc(collection(db, "dice_games"), {
-            userId: currentUser.uid,
-            bet: bet,
-            roll: roll,
-            winnings: winnings,
-            timestamp: new Date().getTime()
-        });
-
-        if (roll <= 2) {
-            resultEl.innerText = `❌ Rolled ${roll}. You lost ${bet} Gold.`;
-            resultEl.style.color = "#FF3B30";
-        } else if (roll <= 4) {
-            resultEl.innerText = `😐 Rolled ${roll}. Break even.`;
-            resultEl.style.color = "var(--text-muted)";
-        } else if (roll === 5) {
-            resultEl.innerText = `🎉 Rolled ${roll}! Won ${winnings} Gold!`;
-            resultEl.style.color = "#34C759";
-        } else {
-            resultEl.innerText = `🔥 Rolled ${roll}! JACKPOT! Won ${winnings} Gold!`;
-            resultEl.style.color = "#FFD700";
-        }
-
-        rollBtn.disabled = false;
-        loadDiceHistory();
-    }, 1500);
-}
-
-// Dice Game Event Listeners (setup once)
-function setupDiceGameListeners() {
-    const betBtns = document.querySelectorAll('.bet-btn');
-    const rollBtn = document.getElementById('roll-dice-btn');
-    const closeBtn = document.getElementById('close-dice-btn');
-    if (!betBtns.length || !rollBtn || !closeBtn) {
-        console.warn('Dice game elements not found yet, retrying...');
-        setTimeout(setupDiceGameListeners, 100);
-        return;
-    }
-    betBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            betBtns.forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            selectedDiceBet = parseInt(btn.dataset.bet);
-        });
-    });
-    rollBtn.addEventListener('click', playDiceGame);
-    closeBtn.addEventListener('click', () => {
-        document.getElementById('dice-game-modal').classList.add('hidden');
-    });
-}
-setupDiceGameListeners();
-
-
-
-// ==================== GAMES & LEADERBOARD SYSTEM ====================
-
-function setupGamesModal() {
-    const openGamesBtn = document.getElementById('open-games-btn');
-    const gamesModal = document.getElementById('games-modal');
-    const closeGamesBtn = document.getElementById('close-games-btn');
-    const diceCard = document.getElementById('games-dice-card');
-
-    if (openGamesBtn && gamesModal) {
-        openGamesBtn.addEventListener('click', () => {
-            gamesModal.classList.remove('hidden');
-        });
-    }
-    if (closeGamesBtn && gamesModal) {
-        closeGamesBtn.addEventListener('click', () => gamesModal.classList.add('hidden'));
-    }
-    if (diceCard) {
-        diceCard.addEventListener('click', () => {
-            if (gamesModal) gamesModal.classList.add('hidden');
-            document.getElementById('dice-game-modal').classList.remove('hidden');
-            loadDiceGame();
-        });
-    }
-}
-
-function setupLeaderboardModals() {
-    const closeGold = document.getElementById('close-gold-leaderboard');
-    const closeLevel = document.getElementById('close-level-leaderboard');
-    if (closeGold) {
-        closeGold.addEventListener('click', () => {
-            document.getElementById('gold-leaderboard-modal').classList.add('hidden');
-        });
-    }
-    if (closeLevel) {
-        closeLevel.addEventListener('click', () => {
-            document.getElementById('level-leaderboard-modal').classList.add('hidden');
-        });
-    }
-}
-
-async function loadGoldLeaderboard() {
-    const container = document.getElementById('gold-leaderboard-list');
-    container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">Loading...</p>';
-    try {
-        const snap = await getDocs(collection(db, "users"));
-        let users = [];
-        snap.forEach(d => users.push(d.data()));
-        users.sort((a, b) => (b.gold || 0) - (a.gold || 0));
-        users = users.slice(0, 20);
-
-        let html = "";
-        users.forEach((u, idx) => {
-            const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
-            html += `
-                <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--glass-border);">
-                    <div style="font-size: 1.2rem; font-weight: 700; width: 36px; text-align: center; color: var(--pink-primary);">${medal}</div>
-                    <img src="${u.photoURL || 'https://via.placeholder.com/40'}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pink-primary);">
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${u.fullName || u.username || 'User'}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">Lv.${u.level || 1}</div>
-                    </div>
-                    <div style="font-weight: 700; color: #FFD700; font-size: 0.9rem;">${(u.gold || 0).toLocaleString()} <i class="fas fa-coins" style="font-size: 0.7rem;"></i></div>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-    } catch(e) {
-        container.innerHTML = '<p style="text-align: center; color: #FF3B30; padding: 20px;">Failed to load leaderboard.</p>';
-    }
-}
-
-async function loadLevelLeaderboard() {
-    const container = document.getElementById('level-leaderboard-list');
-    container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">Loading...</p>';
-    try {
-        const snap = await getDocs(collection(db, "users"));
-        let users = [];
-        snap.forEach(d => users.push(d.data()));
-        users.sort((a, b) => (b.level || 1) - (a.level || 1) || (b.xp || 0) - (a.xp || 0));
-        users = users.slice(0, 20);
-
-        let html = "";
-        users.forEach((u, idx) => {
-            const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
-            const badge = getUserBadgeType(u.level || 1);
-            html += `
-                <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--glass-border);">
-                    <div style="font-size: 1.2rem; font-weight: 700; width: 36px; text-align: center; color: var(--pink-primary);">${medal}</div>
-                    <img src="${u.photoURL || 'https://via.placeholder.com/40'}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pink-primary);">
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${u.fullName || u.username || 'User'}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">${(u.xp || 0)}/${calculateRequiredXpForLevel(u.level || 1)} XP</div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="font-weight: 700; color: var(--pink-light); font-size: 0.9rem;">Lv.${u.level || 1}</span>
-                        <span class="badge-type ${badge.class}" style="font-size: 0.6rem; padding: 1px 5px;">${badge.text}</span>
-                    </div>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-    } catch(e) {
-        container.innerHTML = '<p style="text-align: center; color: #FF3B30; padding: 20px;">Failed to load leaderboard.</p>';
-    }
-}
-
-/* ==================== CALLING SYSTEM WEBRTC + FIREBASE ==================== */
-
-        // Call button handlers
-        voiceCallBtn.addEventListener("click", () => {
-            if (!activeChatUserId || isGroupRoomMode || !currentUser) return;
-            startCall(activeChatUserId, 'voice');
-        });
-
-        videoCallBtn.addEventListener("click", () => {
-            if (!activeChatUserId || isGroupRoomMode || !currentUser) return;
-            startCall(activeChatUserId, 'video');
-        });
-
-        endCallBtn.addEventListener("click", async () => {
-            if (currentCallId) {
-                try {
-                    await updateDoc(doc(db, "calls", currentCallId), { status: 'ended' });
-                } catch(e) {}
-            }
-            endCallCleanup();
-        });
-
-        muteCallBtn.addEventListener("click", () => {
-            if (!localStream) return;
-            localStream.getAudioTracks().forEach(track => {
-                track.enabled = !track.enabled;
-            });
-            isCallMuted = !isCallMuted;
-            muteCallBtn.innerHTML = isCallMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
-            muteCallBtn.classList.toggle("muted", isCallMuted);
-        });
-
-        // ==================== FIX: WebRTC with proper cleanup ====================
-        async function startCall(targetUid, type) {
-            if (!window.RTCPeerConnection || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                alert("Your browser does not support WebRTC calling.");
-                return;
-            }
-            if (currentCallId) {
-                showToast("Already in a call");
-                return;
-            }
-
-            try {
-                const constraints = type === 'video' ? { video: true, audio: true } : { audio: true };
-                localStream = await navigator.mediaDevices.getUserMedia(constraints);
-            } catch (err) {
-                alert("Cannot access microphone/camera. Please allow permissions.");
-                return;
-            }
-
-            currentCallType = type;
-            peerConnection = new RTCPeerConnection(rtcConfig);
-
-            localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
-            });
-
-            peerConnection.ontrack = (event) => {
-                remoteStream = event.streams[0];
-                remoteVideo.srcObject = remoteStream;
-            };
-
-            const callDocRef = await addDoc(collection(db, 'calls'), {
-                callerId: currentUser.uid,
-                callerName: currentUser.displayName || "User",
-                calleeId: targetUid,
-                type: type,
-                status: 'ringing',
-                timestamp: new Date().getTime()
-            });
-
-            currentCallId = callDocRef.id;
-
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate && currentCallId) {
-                    addDoc(collection(db, 'calls', currentCallId, 'callerCandidates'), event.candidate.toJSON());
-                }
-            };
-
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            await updateDoc(callDocRef, { offer: { type: offer.type, sdp: offer.sdp } });
-
-            unsubscribeCallDoc = onSnapshot(callDocRef, async (snapshot) => {
-                const data = snapshot.data();
-                if (!data) return;
-
-                if (data.status === 'rejected') {
-                    showToast('Call rejected');
-                    endCallCleanup();
-                    return;
-                }
-                if (data.status === 'ended') {
-                    showToast('Call ended');
-                    endCallCleanup();
-                    return;
-                }
-
-                // When callee answers, update UI to connected state
-                if (data.status === 'connected' && data.answer && !peerConnection.currentRemoteDescription) {
-                    const answer = new RTCSessionDescription(data.answer);
-                    await peerConnection.setRemoteDescription(answer);
-                    // Switch from Calling... to timer
-                    showActiveCallUI(targetUid, 'connected', type);
-                }
-            });
-
-            // FIX: Track callee candidates listener for cleanup
-            const calleeCandidatesQuery = query(collection(db, 'calls', currentCallId, 'calleeCandidates'));
-            iceCandidateUnsub = onSnapshot(calleeCandidatesQuery, (snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added') {
-                        const candidate = new RTCIceCandidate(change.doc.data());
-                        peerConnection.addIceCandidate(candidate);
-                    }
-                });
-            });
-
-            showActiveCallUI(targetUid, 'outgoing', type);
-        }
-
-        async function acceptCall(callId) {
-            clearTimeout(incomingCallTimeout);
-            const callDocRef = doc(db, 'calls', callId);
-            let callData;
-            try {
-                const snap = await getDoc(callDocRef);
-                if (!snap.exists()) return;
-                callData = snap.data();
-            } catch(e) { return; }
-
-            currentCallId = callId;
-            currentCallType = callData.type;
-
-            try {
-                const constraints = callData.type === 'video' ? { video: true, audio: true } : { audio: true };
-                localStream = await navigator.mediaDevices.getUserMedia(constraints);
-            } catch (err) {
-                alert("Cannot access microphone/camera.");
-                await updateDoc(callDocRef, { status: 'rejected' });
-                hideIncomingCallUI();
-                return;
-            }
-
-            peerConnection = new RTCPeerConnection(rtcConfig);
-
-            localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
-            });
-
-            peerConnection.ontrack = (event) => {
-                remoteStream = event.streams[0];
-                remoteVideo.srcObject = remoteStream;
-            };
-
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate && currentCallId) {
-                    addDoc(collection(db, 'calls', currentCallId, 'calleeCandidates'), event.candidate.toJSON());
-                }
-            };
-
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-
-            await updateDoc(callDocRef, {
-                answer: { type: answer.type, sdp: answer.sdp },
-                status: 'connected'
-            });
-
-            // FIX: Track caller candidates listener for cleanup
-            const callerCandidatesQuery = query(collection(db, 'calls', callId, 'callerCandidates'));
-            iceCandidateUnsub = onSnapshot(callerCandidatesQuery, (snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added') {
-                        const candidate = new RTCIceCandidate(change.doc.data());
-                        peerConnection.addIceCandidate(candidate);
-                    }
-                });
-            });
-
-            unsubscribeCallDoc = onSnapshot(callDocRef, (snapshot) => {
-                const data = snapshot.data();
-                if (data && data.status === 'ended') {
-                    showToast('Call ended by remote');
-                    endCallCleanup();
-                }
-            });
-
-            hideIncomingCallUI();
-            showActiveCallUI(callData.callerId, 'connected', callData.type);
-        }
-
-        async function rejectCall(callId) {
-            clearTimeout(incomingCallTimeout);
-            try {
-                await updateDoc(doc(db, 'calls', callId), { status: 'rejected' });
-            } catch(e) {}
-            hideIncomingCallUI();
-        }
-
-        // ==================== FIX: Complete cleanup for all WebRTC resources ====================
-        function endCallCleanup() {
-            if (callTimerInterval) {
-                clearInterval(callTimerInterval);
-                callTimerInterval = null;
-            }
-            if (callStartTime) {
-                const durationMs = Date.now() - callStartTime;
-                const hours = durationMs / (1000 * 60 * 60);
-                if (hours > 0.005) {
-                    incrementStat('voiceCallHours', parseFloat(hours.toFixed(3)));
-                }
-                callStartTime = null;
-            }
-            if (peerConnection) {
-                peerConnection.onicecandidate = null;
-                peerConnection.ontrack = null;
-                peerConnection.close();
-                peerConnection = null;
-            }
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
-            remoteStream = null;
-            currentCallId = null;
-            currentCallType = null;
-            isCallMuted = false;
-            if (unsubscribeCallDoc) {
-                unsubscribeCallDoc();
-                unsubscribeCallDoc = null;
-            }
-            if (iceCandidateUnsub) {
-                iceCandidateUnsub();
-                iceCandidateUnsub = null;
-            }
-            hideActiveCallUI();
-            hideIncomingCallUI();
-        }
-
-        function listenForIncomingCalls() {
-            if (!currentUser) return;
-            const q = query(
-                collection(db, 'calls'), 
-                where('calleeId', '==', currentUser.uid), 
-                where('status', '==', 'ringing')
-            );
-            unsubscribeIncomingCalls = onSnapshot(q, (snapshot) => {
-                snapshot.docChanges().forEach(async (change) => {
-                    if (change.type === 'added') {
-                        const callData = change.doc.data();
-                        // Don't show if already in a call
-                        if (currentCallId) {
-                            await updateDoc(doc(db, 'calls', change.doc.id), { status: 'rejected' });
-                            return;
+                    musicToggle.onclick = () => {
+                        if (musicPlayer.paused) {
+                            musicPlayer.play().catch(()=>{});
+                            musicToggle.innerHTML = '<i class="fas fa-pause"></i> Pause Music';
+                        } else {
+                            musicPlayer.pause();
+                            musicToggle.innerHTML = '<i class="fas fa-music"></i> Play Profile Music';
                         }
-                        showIncomingCallUI(change.doc.id, callData);
+                    };
+                }
+            }
+        } else {
+            if (musicContainer) musicContainer.classList.add('hidden');
+            if (musicPlayer) { musicPlayer.pause(); musicPlayer.src = ''; }
+        }
+
+        const editBtn = document.getElementById('edit-profile-from-view');
+        const diceBtn = document.getElementById('open-dice-game-btn');
+        if (editBtn) editBtn.style.display = isOwnProfile ? 'inline-flex' : 'none';
+        if (diceBtn) diceBtn.style.display = isOwnProfile ? 'inline-flex' : 'none';
+    } catch (e) {
+        console.error('renderSocialProfile error:', e);
+    }
+}
+
+async function openSocialProfile(targetUid) {
+    console.log('[Profile] openSocialProfile called with uid:', targetUid);
+    try {
+        const uid = targetUid || (currentUser ? currentUser.uid : null);
+        if (!uid) { console.error('[Profile] No uid provided'); return; }
+        const isOwnProfile = uid === (currentUser ? currentUser.uid : null);
+        console.log('[Profile] isOwnProfile:', isOwnProfile, 'uid:', uid);
+
+        // Clean up previous listener
+        if (socialProfileUnsub) { socialProfileUnsub(); socialProfileUnsub = null; }
+
+        // Show modal immediately with loading state
+        const modal = document.getElementById('social-profile-modal');
+        if (!modal) { console.error('[Profile] modal not found'); return; }
+        modal.classList.remove('hidden');
+        console.log('[Profile] Modal shown');
+
+        // Fetch data
+        let snap;
+        try {
+            console.log('[Profile] Fetching user doc for', uid);
+            snap = await getDoc(doc(db, 'users', uid));
+        } catch(e) {
+            console.error('[Profile] getDoc error:', e);
+            return;
+        }
+        if (!snap || !snap.exists()) {
+            console.error('[Profile] User doc not found for uid:', uid);
+            return;
+        }
+        console.log('[Profile] User doc found');
+
+        const data = snap.data();
+        renderSocialProfile(data, isOwnProfile);
+        console.log('[Profile] Profile rendered');
+
+        // Set up real-time listener
+        socialProfileUnsub = onSnapshot(doc(db, 'users', uid), (docSnap) => {
+            if (docSnap.exists()) {
+                console.log('[Profile] Real-time update received');
+                renderSocialProfile(docSnap.data(), isOwnProfile);
+            }
+        });
+
+        // Wire up menu dropdown
+        const menuTrigger = document.getElementById('profile-menu-trigger');
+        const menuDropdown = document.getElementById('profile-menu-dropdown');
+        if (menuTrigger && menuDropdown) {
+            menuTrigger.onclick = (e) => {
+                e.stopPropagation();
+                menuDropdown.classList.toggle('hidden');
+            };
+            const goldLb = document.getElementById('menu-gold-leaderboard');
+            const levelLb = document.getElementById('menu-level-leaderboard');
+            if (goldLb) {
+                goldLb.onclick = () => {
+                    menuDropdown.classList.add('hidden');
+                    modal.classList.add('hidden');
+                    const player = document.getElementById('profile-music-player');
+                    if (player) player.pause();
+                    loadGoldLeaderboard();
+                    document.getElementById('gold-leaderboard-modal').classList.remove('hidden');
+                };
+            }
+            if (levelLb) {
+                levelLb.onclick = () => {
+                    menuDropdown.classList.add('hidden');
+                    modal.classList.add('hidden');
+                    const player = document.getElementById('profile-music-player');
+                    if (player) player.pause();
+                    loadLevelLeaderboard();
+                    document.getElementById('level-leaderboard-modal').classList.remove('hidden');
+                };
+            }
+        }
+
+        // Wire up edit button
+        const editBtn = document.getElementById('edit-profile-from-view');
+        if (editBtn) {
+            editBtn.onclick = () => {
+                modal.classList.add('hidden');
+                const player = document.getElementById('profile-music-player');
+                if (player) player.pause();
+                setProfileModalMode(false);
+                profileModal.classList.remove('hidden');
+                getDoc(doc(db, 'users', currentUser.uid)).then(snap => {
+                    if (snap.exists()) {
+                        const u = snap.data();
+                        profileName.value = u.fullName || currentUser.displayName || '';
+                        profileAge.value = u.age || '';
+                        profileFrom.value = u.from || '';
+                        profileProfession.value = u.profession || '';
+                        modalPreviewAvatar.src = u.photoURL || currentUser.photoURL || 'https://via.placeholder.com/90';
+                        const bioField = document.getElementById('profile-bio');
+                        if (bioField) bioField.value = u.bio || '';
+                        const frameField = document.getElementById('profile-frame');
+                        if (frameField) frameField.value = u.profileFrame || 'none';
+                        const borderField = document.getElementById('profile-border');
+                        if (borderField) borderField.value = u.avatarBorder || 'none';
+                        const themeField = document.getElementById('profile-theme');
+                        if (themeField) themeField.value = u.profileTheme || 'blackpink';
+                        const musicField = document.getElementById('profile-music');
+                        if (musicField) musicField.value = u.profileMusic || '';
+                        const fontField = document.getElementById('profile-font');
+                        if (fontField) fontField.value = u.fontStyle || 'default';
+                        const bioWords = (u.bio || '').trim().split(/\s+/).filter(w => w.length > 0).length;
+                        const wcEl = document.getElementById('bio-word-count');
+                        if (wcEl) wcEl.innerText = bioWords;
+                        const coverContainer = document.getElementById('cover-preview-container');
+                        const coverPlaceholder = document.getElementById('cover-placeholder-text');
+                        if (coverContainer && u.coverPhoto) {
+                            coverContainer.style.backgroundImage = "url('" + u.coverPhoto + "')";
+                            if (coverPlaceholder) coverPlaceholder.style.display = 'none';
+                        } else if (coverContainer) {
+                            coverContainer.style.backgroundImage = '';
+                            if (coverPlaceholder) coverPlaceholder.style.display = 'block';
+                        }
                     }
-                });
-            });
-        }
-
-        // ==================== FIX: Proper ringtone management ====================
-        async function showIncomingCallUI(callId, callData) {
-            // Force viewport recalculation for mobile browsers
-            const vh = window.innerHeight * 0.01;
-            document.documentElement.style.setProperty('--vh', `${vh}px`);
-
-            try {
-                const callerDoc = await getDoc(doc(db, 'users', callData.callerId));
-                const callerName = callerDoc.exists() ? (callerDoc.data().fullName || callerDoc.data().username || 'Unknown') : 'Unknown';
-                const callerPhoto = callerDoc.exists() ? callerDoc.data().photoURL : 'https://via.placeholder.com/110';
-
-                incomingCallerAvatar.src = callerPhoto;
-                incomingCallerName.innerText = callerName;
-                incomingCallType.innerText = callData.type === 'video' ? 'Incoming Video Call' : 'Incoming Voice Call';
-            } catch(e) {
-                incomingCallerName.innerText = callData.callerName || 'Unknown';
-            }
-
-            incomingCallModal.classList.remove('hidden');
-
-            // FIX: Proper ringtone with module-level reference
-            if (currentRingtone) {
-                currentRingtone.pause();
-                currentRingtone = null;
-            }
-            currentRingtone = new Audio('https://assets.mixkit.co/active_storage/sfx/2865/2865-84.wav');
-            currentRingtone.loop = true;
-            currentRingtone.play().catch(()=>{});
-
-            acceptCallBtn.onclick = () => {
-                if (currentRingtone) { currentRingtone.pause(); currentRingtone = null; }
-                acceptCall(callId);
+                }).catch(() => {});
             };
-            rejectCallBtn.onclick = () => {
-                if (currentRingtone) { currentRingtone.pause(); currentRingtone = null; }
-                rejectCall(callId);
+        }
+
+        // Wire up close button
+        const closeBtn = document.getElementById('close-social-profile');
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                modal.classList.add('hidden');
+                const player = document.getElementById('profile-music-player');
+                if (player) { player.pause(); player.currentTime = 0; }
+                if (socialProfileUnsub) { socialProfileUnsub(); socialProfileUnsub = null; }
             };
-
-            clearTimeout(incomingCallTimeout);
-            incomingCallTimeout = setTimeout(() => {
-                if (!incomingCallModal.classList.contains('hidden')) {
-                    if (currentRingtone) { currentRingtone.pause(); currentRingtone = null; }
-                    rejectCall(callId);
-                    showToast("Missed call");
-                }
-            }, 30000);
         }
 
-        function hideIncomingCallUI() {
-            incomingCallModal.classList.add('hidden');
-            clearTimeout(incomingCallTimeout);
-            // FIX: Always stop ringtone when hiding
-            if (currentRingtone) {
-                currentRingtone.pause();
-                currentRingtone = null;
-            }
-        }
+        console.log('[Profile] Profile fully loaded');
+    } catch (e) {
+        console.error('[Profile] openSocialProfile fatal error:', e);
+    }
+}
 
-        function showActiveCallUI(targetId, status, type) {
-            // Force viewport recalculation for mobile browsers
-            const vh = window.innerHeight * 0.01;
-            document.documentElement.style.setProperty('--vh', `${vh}px`);
-
-            activeCallOverlay.classList.remove('hidden');
-            // Force reflow to ensure grid layout calculates correctly
-            void activeCallOverlay.offsetHeight;
-
-            const titleName = chatUserName.innerText || 'User';
-            activeCallTitle.innerText = type === 'video' ? `Video Call with ${titleName}` : `Voice Call with ${titleName}`;
-
-            const callStatusEl = document.getElementById('active-call-status');
-
-            if (type === 'video') {
-                localVideo.classList.remove('hidden');
-                localVideo.srcObject = localStream;
-                remoteVideo.classList.remove('hidden');
-                voiceOnlyAvatar.classList.add('hidden');
-            } else {
-                localVideo.classList.add('hidden');
-                remoteVideo.classList.add('hidden');
-                voiceOnlyAvatar.classList.remove('hidden');
-                callAvatarImg.src = chatUserAvatar.src;
-            }
-
-            // Handle ringing vs connected states
-            if (status === 'outgoing' || status === 'ringing') {
-                // Caller is waiting for answer
-                activeCallTimer.classList.add('hidden');
-                if (callStatusEl) {
-                    callStatusEl.classList.remove('hidden');
-                    callStatusEl.innerText = status === 'outgoing' ? 'Calling...' : 'Ringing...';
-                }
-                // Pause wave animation during ringing
-                const waveSpans = document.querySelectorAll('.call-wave span');
-                waveSpans.forEach(span => span.style.animationPlayState = 'paused');
-            } else {
-                // Connected - start timer and wave animation
-                activeCallTimer.classList.remove('hidden');
-                if (callStatusEl) callStatusEl.classList.add('hidden');
-                callStartTime = Date.now(); // NEW: Track call start for stats
-
-                const waveSpans = document.querySelectorAll('.call-wave span');
-                waveSpans.forEach(span => span.style.animationPlayState = 'running');
-
-                let seconds = 0;
-                activeCallTimer.innerText = "00:00";
-                callTimerInterval = setInterval(() => {
-                    seconds++;
-                    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-                    const s = (seconds % 60).toString().padStart(2, '0');
-                    activeCallTimer.innerText = `${m}:${s}`;
-                }, 1000);
-            }
-        }
-
-        function hideActiveCallUI() {
-            activeCallOverlay.classList.add('hidden');
-            remoteVideo.srcObject = null;
-            localVideo.srcObject = null;
-            localVideo.classList.add('hidden');
-            voiceOnlyAvatar.classList.add('hidden');
-            muteCallBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-            muteCallBtn.classList.remove("muted");
-            // Reset wave animation
-            const waveSpans = document.querySelectorAll('.call-wave span');
-            waveSpans.forEach(span => span.style.animationPlayState = 'running');
-            // Reset status text
-            const callStatusEl = document.getElementById('active-call-status');
-            if (callStatusEl) callStatusEl.classList.add('hidden');
-            activeCallTimer.classList.remove('hidden');
-            // Ensure body scroll is restored if needed
-            document.body.style.overflow = 'hidden';
-        }
-
-    window.openSocialProfile = openSocialProfile;
+window.openSocialProfile = openSocialProfile;
     window.loadGoldLeaderboard = loadGoldLeaderboard;
     window.loadLevelLeaderboard = loadLevelLeaderboard;
     </script>

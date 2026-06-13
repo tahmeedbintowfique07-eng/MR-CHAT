@@ -5097,6 +5097,396 @@ function loadQuizLeaderboard() {
     }
 }
 
+/* ==================== CALLING SYSTEM WEBRTC + FIREBASE ==================== */
+
+        // Call button handlers
+        voiceCallBtn.addEventListener("click", () => {
+            if (!activeChatUserId || isGroupRoomMode || !currentUser) return;
+            startCall(activeChatUserId, 'voice');
+        });
+
+        videoCallBtn.addEventListener("click", () => {
+            if (!activeChatUserId || isGroupRoomMode || !currentUser) return;
+            startCall(activeChatUserId, 'video');
+        });
+
+        endCallBtn.addEventListener("click", async () => {
+            if (currentCallId) {
+                try {
+                    await updateDoc(doc(db, "calls", currentCallId), { status: 'ended' });
+                } catch(e) {}
+            }
+            endCallCleanup();
+        });
+
+        muteCallBtn.addEventListener("click", () => {
+            if (!localStream) return;
+            localStream.getAudioTracks().forEach(track => {
+                track.enabled = !track.enabled;
+            });
+            isCallMuted = !isCallMuted;
+            muteCallBtn.innerHTML = isCallMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
+            muteCallBtn.classList.toggle("muted", isCallMuted);
+        });
+
+        // ==================== FIX: WebRTC with proper cleanup ====================
+        async function startCall(targetUid, type) {
+            if (!window.RTCPeerConnection || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert("Your browser does not support WebRTC calling.");
+                return;
+            }
+            if (currentCallId) {
+                showToast("Already in a call");
+                return;
+            }
+
+            try {
+                const constraints = type === 'video' ? { video: true, audio: true } : { audio: true };
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+            } catch (err) {
+                alert("Cannot access microphone/camera. Please allow permissions.");
+                return;
+            }
+
+            currentCallType = type;
+            peerConnection = new RTCPeerConnection(rtcConfig);
+
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+
+            peerConnection.ontrack = (event) => {
+                remoteStream = event.streams[0];
+                remoteVideo.srcObject = remoteStream;
+            };
+
+            const callDocRef = await addDoc(collection(db, 'calls'), {
+                callerId: currentUser.uid,
+                callerName: currentUser.displayName || "User",
+                calleeId: targetUid,
+                type: type,
+                status: 'ringing',
+                timestamp: new Date().getTime()
+            });
+
+            currentCallId = callDocRef.id;
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate && currentCallId) {
+                    addDoc(collection(db, 'calls', currentCallId, 'callerCandidates'), event.candidate.toJSON());
+                }
+            };
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            await updateDoc(callDocRef, { offer: { type: offer.type, sdp: offer.sdp } });
+
+            unsubscribeCallDoc = onSnapshot(callDocRef, async (snapshot) => {
+                const data = snapshot.data();
+                if (!data) return;
+
+                if (data.status === 'rejected') {
+                    showToast('Call rejected');
+                    endCallCleanup();
+                    return;
+                }
+                if (data.status === 'ended') {
+                    showToast('Call ended');
+                    endCallCleanup();
+                    return;
+                }
+
+                // When callee answers, update UI to connected state
+                if (data.status === 'connected' && data.answer && !peerConnection.currentRemoteDescription) {
+                    const answer = new RTCSessionDescription(data.answer);
+                    await peerConnection.setRemoteDescription(answer);
+                    // Switch from Calling... to timer
+                    showActiveCallUI(targetUid, 'connected', type);
+                }
+            });
+
+            // FIX: Track callee candidates listener for cleanup
+            const calleeCandidatesQuery = query(collection(db, 'calls', currentCallId, 'calleeCandidates'));
+            iceCandidateUnsub = onSnapshot(calleeCandidatesQuery, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        const candidate = new RTCIceCandidate(change.doc.data());
+                        peerConnection.addIceCandidate(candidate);
+                    }
+                });
+            });
+
+            showActiveCallUI(targetUid, 'outgoing', type);
+        }
+
+        async function acceptCall(callId) {
+            clearTimeout(incomingCallTimeout);
+            const callDocRef = doc(db, 'calls', callId);
+            let callData;
+            try {
+                const snap = await getDoc(callDocRef);
+                if (!snap.exists()) return;
+                callData = snap.data();
+            } catch(e) { return; }
+
+            currentCallId = callId;
+            currentCallType = callData.type;
+
+            try {
+                const constraints = callData.type === 'video' ? { video: true, audio: true } : { audio: true };
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+            } catch (err) {
+                alert("Cannot access microphone/camera.");
+                await updateDoc(callDocRef, { status: 'rejected' });
+                hideIncomingCallUI();
+                return;
+            }
+
+            peerConnection = new RTCPeerConnection(rtcConfig);
+
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+
+            peerConnection.ontrack = (event) => {
+                remoteStream = event.streams[0];
+                remoteVideo.srcObject = remoteStream;
+            };
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate && currentCallId) {
+                    addDoc(collection(db, 'calls', currentCallId, 'calleeCandidates'), event.candidate.toJSON());
+                }
+            };
+
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+
+            await updateDoc(callDocRef, {
+                answer: { type: answer.type, sdp: answer.sdp },
+                status: 'connected'
+            });
+
+            // FIX: Track caller candidates listener for cleanup
+            const callerCandidatesQuery = query(collection(db, 'calls', callId, 'callerCandidates'));
+            iceCandidateUnsub = onSnapshot(callerCandidatesQuery, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        const candidate = new RTCIceCandidate(change.doc.data());
+                        peerConnection.addIceCandidate(candidate);
+                    }
+                });
+            });
+
+            unsubscribeCallDoc = onSnapshot(callDocRef, (snapshot) => {
+                const data = snapshot.data();
+                if (data && data.status === 'ended') {
+                    showToast('Call ended by remote');
+                    endCallCleanup();
+                }
+            });
+
+            hideIncomingCallUI();
+            showActiveCallUI(callData.callerId, 'connected', callData.type);
+        }
+
+        async function rejectCall(callId) {
+            clearTimeout(incomingCallTimeout);
+            try {
+                await updateDoc(doc(db, 'calls', callId), { status: 'rejected' });
+            } catch(e) {}
+            hideIncomingCallUI();
+        }
+
+        // ==================== FIX: Complete cleanup for all WebRTC resources ====================
+        function endCallCleanup() {
+            if (callTimerInterval) {
+                clearInterval(callTimerInterval);
+                callTimerInterval = null;
+            }
+            if (peerConnection) {
+                peerConnection.onicecandidate = null;
+                peerConnection.ontrack = null;
+                peerConnection.close();
+                peerConnection = null;
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            remoteStream = null;
+            currentCallId = null;
+            currentCallType = null;
+            isCallMuted = false;
+            if (unsubscribeCallDoc) {
+                unsubscribeCallDoc();
+                unsubscribeCallDoc = null;
+            }
+            if (iceCandidateUnsub) {
+                iceCandidateUnsub();
+                iceCandidateUnsub = null;
+            }
+            hideActiveCallUI();
+            hideIncomingCallUI();
+        }
+
+        function listenForIncomingCalls() {
+            if (!currentUser) return;
+            const q = query(
+                collection(db, 'calls'), 
+                where('calleeId', '==', currentUser.uid), 
+                where('status', '==', 'ringing')
+            );
+            unsubscribeIncomingCalls = onSnapshot(q, (snapshot) => {
+                snapshot.docChanges().forEach(async (change) => {
+                    if (change.type === 'added') {
+                        const callData = change.doc.data();
+                        // Don't show if already in a call
+                        if (currentCallId) {
+                            await updateDoc(doc(db, 'calls', change.doc.id), { status: 'rejected' });
+                            return;
+                        }
+                        showIncomingCallUI(change.doc.id, callData);
+                    }
+                });
+            });
+        }
+
+        // ==================== FIX: Proper ringtone management ====================
+        async function showIncomingCallUI(callId, callData) {
+            // Force viewport recalculation for mobile browsers
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+
+            try {
+                const callerDoc = await getDoc(doc(db, 'users', callData.callerId));
+                const callerName = callerDoc.exists() ? (callerDoc.data().fullName || callerDoc.data().username || 'Unknown') : 'Unknown';
+                const callerPhoto = callerDoc.exists() ? callerDoc.data().photoURL : 'https://via.placeholder.com/110';
+
+                incomingCallerAvatar.src = callerPhoto;
+                incomingCallerName.innerText = callerName;
+                incomingCallType.innerText = callData.type === 'video' ? 'Incoming Video Call' : 'Incoming Voice Call';
+            } catch(e) {
+                incomingCallerName.innerText = callData.callerName || 'Unknown';
+            }
+
+            incomingCallModal.classList.remove('hidden');
+
+            // FIX: Proper ringtone with module-level reference
+            if (currentRingtone) {
+                currentRingtone.pause();
+                currentRingtone = null;
+            }
+            currentRingtone = new Audio('https://assets.mixkit.co/active_storage/sfx/2865/2865-84.wav');
+            currentRingtone.loop = true;
+            currentRingtone.play().catch(()=>{});
+
+            acceptCallBtn.onclick = () => {
+                if (currentRingtone) { currentRingtone.pause(); currentRingtone = null; }
+                acceptCall(callId);
+            };
+            rejectCallBtn.onclick = () => {
+                if (currentRingtone) { currentRingtone.pause(); currentRingtone = null; }
+                rejectCall(callId);
+            };
+
+            clearTimeout(incomingCallTimeout);
+            incomingCallTimeout = setTimeout(() => {
+                if (!incomingCallModal.classList.contains('hidden')) {
+                    if (currentRingtone) { currentRingtone.pause(); currentRingtone = null; }
+                    rejectCall(callId);
+                    showToast("Missed call");
+                }
+            }, 30000);
+        }
+
+        function hideIncomingCallUI() {
+            incomingCallModal.classList.add('hidden');
+            clearTimeout(incomingCallTimeout);
+            // FIX: Always stop ringtone when hiding
+            if (currentRingtone) {
+                currentRingtone.pause();
+                currentRingtone = null;
+            }
+        }
+
+        function showActiveCallUI(targetId, status, type) {
+            // Force viewport recalculation for mobile browsers
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+
+            activeCallOverlay.classList.remove('hidden');
+            // Force reflow to ensure grid layout calculates correctly
+            void activeCallOverlay.offsetHeight;
+
+            const titleName = chatUserName.innerText || 'User';
+            activeCallTitle.innerText = type === 'video' ? `Video Call with ${titleName}` : `Voice Call with ${titleName}`;
+
+            const callStatusEl = document.getElementById('active-call-status');
+
+            if (type === 'video') {
+                localVideo.classList.remove('hidden');
+                localVideo.srcObject = localStream;
+                remoteVideo.classList.remove('hidden');
+                voiceOnlyAvatar.classList.add('hidden');
+            } else {
+                localVideo.classList.add('hidden');
+                remoteVideo.classList.add('hidden');
+                voiceOnlyAvatar.classList.remove('hidden');
+                callAvatarImg.src = chatUserAvatar.src;
+            }
+
+            // Handle ringing vs connected states
+            if (status === 'outgoing' || status === 'ringing') {
+                // Caller is waiting for answer
+                activeCallTimer.classList.add('hidden');
+                if (callStatusEl) {
+                    callStatusEl.classList.remove('hidden');
+                    callStatusEl.innerText = status === 'outgoing' ? 'Calling...' : 'Ringing...';
+                }
+                // Pause wave animation during ringing
+                const waveSpans = document.querySelectorAll('.call-wave span');
+                waveSpans.forEach(span => span.style.animationPlayState = 'paused');
+            } else {
+                // Connected - start timer and wave animation
+                activeCallTimer.classList.remove('hidden');
+                if (callStatusEl) callStatusEl.classList.add('hidden');
+
+                const waveSpans = document.querySelectorAll('.call-wave span');
+                waveSpans.forEach(span => span.style.animationPlayState = 'running');
+
+                let seconds = 0;
+                activeCallTimer.innerText = "00:00";
+                callTimerInterval = setInterval(() => {
+                    seconds++;
+                    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+                    const s = (seconds % 60).toString().padStart(2, '0');
+                    activeCallTimer.innerText = `${m}:${s}`;
+                }, 1000);
+            }
+        }
+
+        function hideActiveCallUI() {
+            activeCallOverlay.classList.add('hidden');
+            remoteVideo.srcObject = null;
+            localVideo.srcObject = null;
+            localVideo.classList.add('hidden');
+            voiceOnlyAvatar.classList.add('hidden');
+            muteCallBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+            muteCallBtn.classList.remove("muted");
+            // Reset wave animation
+            const waveSpans = document.querySelectorAll('.call-wave span');
+            waveSpans.forEach(span => span.style.animationPlayState = 'running');
+            // Reset status text
+            const callStatusEl = document.getElementById('active-call-status');
+            if (callStatusEl) callStatusEl.classList.add('hidden');
+            activeCallTimer.classList.remove('hidden');
+            // Ensure body scroll is restored if needed
+            document.body.style.overflow = 'hidden';
+        }
+
+    
 window.openSocialProfile = openSocialProfile;
     window.loadGoldLeaderboard = loadGoldLeaderboard;
     window.loadLevelLeaderboard = loadLevelLeaderboard;

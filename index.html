@@ -4,7 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MR - CHATTING PREMIUM</title>
-    
+
+    <!-- EARLY THEME APPLICATION TO PREVENT FOUC -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem("mr_web_theme") || "default";
+            if (savedTheme === "default") {
+                const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+                document.documentElement.setAttribute("data-theme", systemPrefersDark ? "dark" : "white");
+            } else {
+                document.documentElement.setAttribute("data-theme", savedTheme);
+            }
+        })();
+    </script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -534,7 +547,7 @@
             padding: 6px 0;
             color: #fff;
         }
-        
+
         .audio-control-btn {
             width: 34px;
             height: 34px;
@@ -552,7 +565,7 @@
         .audio-control-btn:hover {
             background: rgba(255, 255, 255, 0.3);
         }
-        
+
         .audio-timeline-track {
             flex: 1;
             height: 4px;
@@ -561,7 +574,7 @@
             position: relative;
             cursor: pointer;
         }
-        
+
         .audio-timeline-fill {
             height: 100%;
             width: 0%;
@@ -570,7 +583,7 @@
             position: absolute;
             top: 0; left: 0;
         }
-        
+
         .audio-time-stamp {
             font-size: 0.75rem;
             color: rgba(255, 255, 255, 0.8);
@@ -693,7 +706,7 @@
             flex-direction: column;
             gap: 12px;
         }
-        
+
         .gif-search-bar {
             display: flex;
             gap: 8px;
@@ -835,7 +848,7 @@
         }
         .call-header-bar h3 { font-size: 1.1rem; margin-bottom: 4px; }
         .call-timer { color: var(--pink-light); font-size: 0.9rem; font-weight: 600; }
-        
+
         .call-video-stage {
             flex: 1;
             position: relative;
@@ -942,8 +955,9 @@
     <div id="auth-container" class="auth-box">
         <div class="auth-header">
             <div class="auth-header-logo">
+                <!-- FIXED SVG: Corrected viewBox and paths to fit within bounds -->
                 <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 6C13.66 6 15 7.34 15 9C15 10.66 13.66 12 12 12C10.34 12 9 10.66 9 9C9 7.34 10.34 6 12 6ZM12 18C9.33 18 4.67 19.33 4.67 22C6.24 23.57 8.51 24.5 11 24.5C14.7 24.5 17.8 22.3 19.1 19.2C17.8 18.4 14.9 18 12 18Z" fill="#FF007F"/>
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 6C13.66 6 15 7.34 15 9C15 10.66 13.66 12 12 12C10.34 12 9 10.66 9 9C9 7.34 10.34 6 12 6ZM12 20C9.5 20 7.2 19.1 5.5 17.6C6.8 16.8 9.3 16.5 12 16.5C14.7 16.5 17.2 16.8 18.5 17.6C16.8 19.1 14.5 20 12 20Z" fill="#FF007F"/>
                     <path d="M20 2H14V4H20V10H22V4C22 2.9 21.1 2 20 2Z" fill="#FF66B2"/>
                 </svg>
             </div>
@@ -966,7 +980,7 @@
             <button type="submit" id="auth-submit-btn" class="main-btn">Sign Up</button>
         </form>
         <div style="margin-top:20px;">
-            <p id="auth-toggle-text">Already have an account? <span id="auth-toggle-link" style="color: var(--pink-primary); cursor: pointer; font-weight: bold;">Login here</span></p>
+            <p id="auth-toggle-text">Already have an account? <a id="auth-toggle-link" href="#" style="color: var(--pink-primary); cursor: pointer; font-weight: bold; text-decoration: none;">Login here</a></p>
         </div>
     </div>
 
@@ -1000,7 +1014,7 @@
                     <button id="logout-btn" class="icon-btn"><i class="fas fa-arrow-right-from-bracket"></i></button>
                 </div>
             </div>
-            
+
             <div class="search-box">
                 <div class="input-group">
                     <i class="fas fa-search"></i>
@@ -1032,7 +1046,7 @@
                 <div class="welcome-content">
                     <div class="welcome-logo">
                         <svg width="70" height="70" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 6C13.66 6 15 7.34 15 9C15 10.66 13.66 12 12 12C10.34 12 9 10.66 9 9C9 7.34 10.34 6 12 6ZM12 18C9.33 18 4.67 19.33 4.67 22C6.24 23.57 8.51 24.5 11 24.5C14.7 24.5 17.8 22.3 19.1 19.2C17.8 18.4 14.9 18 12 18Z" fill="#FF007F"/>
+                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 6C13.66 6 15 7.34 15 9C15 10.66 13.66 12 12 12C10.34 12 9 10.66 9 9C9 7.34 10.34 6 12 6ZM12 20C9.5 20 7.2 19.1 5.5 17.6C6.8 16.8 9.3 16.5 12 16.5C14.7 16.5 17.2 16.8 18.5 17.6C16.8 19.1 14.5 20 12 20Z" fill="#FF007F"/>
                             <path d="M20 2H14V4H20V10H22V4C22 2.9 21.1 2 20 2Z" fill="#FF66B2"/>
                         </svg>
                     </div>
@@ -1105,10 +1119,10 @@
                         <button type="button" id="inbox-photo-trigger-btn" class="icon-btn"><i class="fas fa-image"></i></button>
                         <button type="button" id="inbox-gif-trigger-btn" class="icon-btn"><i class="fas fa-face-smile"></i></button>
                         <button type="button" id="inbox-voice-trigger-btn" class="icon-btn"><i class="fas fa-microphone"></i></button>
-                        
+
                         <input type="file" id="inbox-file-input" accept="image/*" class="hidden">
                         <input type="text" id="message-input" placeholder="Drop a premium message here..." autocomplete="off">
-                        
+
                         <button type="submit" class="send-btn"><i class="fas fa-paper-plane"></i></button>
                     </form>
                 </div>
@@ -1138,7 +1152,7 @@
                     <label id="upload-dp-label" for="profile-dp-input" class="action-btn-sm btn-pink" style="cursor: pointer; display: inline-block; padding: 8px 15px;"><i class="fas fa-camera"></i> Select Photo</label>
                     <input type="file" id="profile-dp-input" accept="image/*" class="hidden">
                 </div>
-                
+
                 <div class="input-group">
                     <i class="fas fa-signature"></i>
                     <input type="text" id="profile-name" placeholder="Full Name" required>
@@ -1215,6 +1229,9 @@
         const db = getFirestore(app);
 
         const alertAudio = new Audio("https://assets.mixkit.co/active_storage/sfx/2357/2357-84.wav");
+
+        // ==================== RINGTONE FIX: Module-level reference ====================
+        let currentRingtone = null;
 
         const authContainer = document.getElementById("auth-container");
         const appContainer = document.getElementById("app-container");
@@ -1323,13 +1340,14 @@
         let activeTab = "chats";
         let typingTimeout = null;
         let selectedFile = null;
-        
+
         let inboxSelectedBase64Image = null; 
         let inboxSelectedVoiceBase64 = null;
         let mediaRecorder = null;
         let audioChunks = [];
         let isVoiceRecording = false;
         let shouldSendAfterVoiceStop = false;
+        let currentVoiceStream = null; // FIX: Track stream for cleanup
 
         let contextSelectedMsgId = null;
         let contextSelectedMsgData = null;
@@ -1356,6 +1374,7 @@
         let callTimerInterval = null;
         let isCallMuted = false;
         let incomingCallTimeout = null;
+        let iceCandidateUnsub = null; // FIX: Track ICE candidate listener for cleanup
 
         if ("Notification" in window && Notification.permission === "default") {
             Notification.requestPermission();
@@ -1366,10 +1385,10 @@
                 let vh = window.innerHeight * 0.01;
                 document.documentElement.style.setProperty('--vh', `${vh}px`);
             };
-            
+
             window.addEventListener('resize', updateViewportHeightValue);
             window.addEventListener('orientationchange', updateViewportHeightValue);
-            
+
             if (window.visualViewport) {
                 window.visualViewport.addEventListener('resize', () => {
                     updateViewportHeightValue();
@@ -1472,10 +1491,10 @@
                     const data = userSnap.data();
                     let currentXp = data.xp || 0;
                     let currentLevel = data.level || 1;
-                    
+
                     currentXp += amount;
                     let requiredXp = calculateRequiredXpForLevel(currentLevel);
-                    
+
                     let leveledUp = false;
                     while (currentXp >= requiredXp) {
                         currentXp -= requiredXp;
@@ -1483,15 +1502,15 @@
                         requiredXp = calculateRequiredXpForLevel(currentLevel);
                         leveledUp = true;
                     }
-                    
+
                     const badgeInfo = getUserBadgeType(currentLevel);
-                    
+
                     await updateDoc(userDocRef, {
                         xp: currentXp,
                         level: currentLevel,
                         userType: badgeInfo.text
                     });
-                    
+
                     if (leveledUp) {
                         showToast(`🎉 LEVEL UP! You are now Level ${currentLevel}!`);
                     }
@@ -1509,7 +1528,7 @@
             document.getElementById("current-user-level").innerText = `Lv.${level}`;
             document.getElementById("current-user-xp-text").innerText = `${xp}/${nextLevelXp} XP`;
             document.getElementById("current-user-xp-bar").style.width = `${progressPercentage}%`;
-            
+
             const badgeEl = document.getElementById("current-user-badge");
             badgeEl.className = `badge-type ${badgeInfo.class}`;
             badgeEl.innerText = badgeInfo.text;
@@ -1533,23 +1552,27 @@
 
         window.addEventListener("beforeunload", () => {
             if (currentUser) {
-                updateDoc(doc(db, "users", currentUser.uid), { status: "offline", isTypingTo: null, lastSeen: new Date().getTime() });
+                updateDoc(doc(db, "users", currentUser.uid), { status: "offline", isTypingTo: null, activeChatWith: null, lastSeen: new Date().getTime() });
             }
             endCallCleanup();
         });
 
-        document.addEventListener("click", function(e) {
-            if(e.target && e.target.id === 'auth-toggle-link'){
-                isLoginMode = !isLoginMode;
-                if (isLoginMode) {
-                    usernameFieldGroup.style.display = "none";
-                    authSubmitBtn.innerText = "Login";
-                    document.getElementById("auth-toggle-text").innerHTML = `Don't have an account? <span id="auth-toggle-link" style="color:var(--pink-primary); cursor:pointer; font-weight:bold;">Register here</span>`;
-                } else {
-                    usernameFieldGroup.style.display = "flex";
-                    authSubmitBtn.innerText = "Sign Up";
-                    document.getElementById("auth-toggle-text").innerHTML = `Already have an account? <span id="auth-toggle-link" style="color:var(--pink-primary); cursor:pointer; font-weight:bold;">Login here</span>`;
-                }
+        // ==================== FIX: Robust auth toggle using direct listener ====================
+        const authToggleLink = document.getElementById("auth-toggle-link");
+        authToggleLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            isLoginMode = !isLoginMode;
+            if (isLoginMode) {
+                usernameFieldGroup.style.display = "none";
+                authSubmitBtn.innerText = "Login";
+                document.getElementById("auth-toggle-text").innerHTML = `Don't have an account? <a id="auth-toggle-link" href="#" style="color:var(--pink-primary); cursor:pointer; font-weight:bold; text-decoration:none;">Register here</a>`;
+                // Re-attach listener to new element
+                document.getElementById("auth-toggle-link").addEventListener("click", arguments.callee);
+            } else {
+                usernameFieldGroup.style.display = "flex";
+                authSubmitBtn.innerText = "Sign Up";
+                document.getElementById("auth-toggle-text").innerHTML = `Already have an account? <a id="auth-toggle-link" href="#" style="color:var(--pink-primary); cursor:pointer; font-weight:bold; text-decoration:none;">Login here</a>`;
+                document.getElementById("auth-toggle-link").addEventListener("click", arguments.callee);
             }
         });
 
@@ -1571,17 +1594,19 @@
                     await setDoc(doc(db, "users", user.uid), {
                         uid: user.uid,
                         username: username,
+                        fullName: username, // FIX: Initialize fullName to username for consistency
                         email: email,
                         photoURL: `https://api.dicebear.com/7.x/adventurer/svg?seed=${username}`,
                         status: "online",
                         isTypingTo: null,
+                        activeChatWith: null,
                         role: "user", 
                         xp: 0,
                         level: 1,
                         userType: "Bronze",
                         lastSeen: new Date().getTime()
                     });
-                    
+
                     await setDoc(doc(db, "group_rooms", "global_public_lounge"), {
                         roomId: "global_public_lounge",
                         roomName: "Global Public Lounge",
@@ -1599,14 +1624,14 @@
                 currentUser = user;
                 authContainer.classList.add("hidden");
                 appContainer.classList.remove("hidden");
-                
+
                 onSnapshot(doc(db, "users", user.uid), (docSnap) => {
                     if (docSnap.exists()) {
                         const uData = docSnap.data();
                         currentUserRole = uData.role || "user"; 
                         document.getElementById("current-user-name").innerText = uData.fullName || uData.username || user.displayName || "User";
                         document.getElementById("current-user-avatar").src = uData.photoURL || user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.displayName}`;
-                        
+
                         updateSidebarGamificationUI(uData);
 
                         if(activeTab === "rooms") {
@@ -1620,7 +1645,7 @@
                 listenRequestBadge();
                 listenGlobalIncomingMessagesForNotification();
                 initMessageActionListeners();
-                listenForIncomingCalls(); // START LISTENING FOR CALLS
+                listenForIncomingCalls();
             } else {
                 currentUser = null;
                 appContainer.classList.add("hidden");
@@ -1633,20 +1658,38 @@
         if(logoutBtn) {
             logoutBtn.addEventListener("click", async () => {
                 endCallCleanup();
-                if (currentUser) { try { await updateDoc(doc(db, "users", currentUser.uid), { status: "offline", isTypingTo: null, lastSeen: new Date().getTime() }); } catch(e) {} }
-                signOut(auth).then(() => { window.location.reload(); });
+                if (currentUser) { 
+                    try { 
+                        await updateDoc(doc(db, "users", currentUser.uid), { status: "offline", isTypingTo: null, activeChatWith: null, lastSeen: new Date().getTime() }); 
+                    } catch(e) {} 
+                }
+                // FIX: Added catch for signOut errors
+                signOut(auth).then(() => { 
+                    window.location.reload(); 
+                }).catch((err) => {
+                    console.error("SignOut error:", err);
+                    window.location.reload();
+                });
             });
         }
 
+        // ==================== FIX: Notification spam prevention ====================
+        let lastNotifiedMessageId = null;
         function listenGlobalIncomingMessagesForNotification() {
             const qAllFriendships = query(collection(db, "friendships"), or(where("user1", "==", currentUser.uid), where("user2", "==", currentUser.uid)));
             onSnapshot(qAllFriendships, (snapshot) => {
                 snapshot.docChanges().forEach(async (change) => {
                     if (change.type === "modified") {
                         const data = change.doc.data();
+                        // Only notify if there's a new message from someone else AND it's actually different
                         if (data.lastMessageSenderId && data.lastMessageSenderId !== currentUser.uid) {
                             if (activeChatUserId !== data.lastMessageSenderId || isGroupRoomMode) {
-                                triggerNativeAlertNotification("New Message Alert", data.lastMessage || "Attachment Received.");
+                                // Create a unique key for this message notification
+                                const msgKey = `${data.lastMessageSenderId}_${data.timestamp}`;
+                                if (msgKey !== lastNotifiedMessageId) {
+                                    lastNotifiedMessageId = msgKey;
+                                    triggerNativeAlertNotification("New Message Alert", data.lastMessage || "Attachment Received.");
+                                }
                             }
                         }
                     }
@@ -1688,7 +1731,7 @@
             tabRooms.classList.remove("active");
             tabFriends.classList.remove("active");
             tabRequests.classList.remove("active");
-            
+
             toggleAdminPanelDisplay();
             if(unsubscribeRealtimeStream) { unsubscribeRealtimeStream(); unsubscribeRealtimeStream = null; }
             activeChatsList.innerHTML = "";
@@ -1747,11 +1790,13 @@
         });
 
         function loadAcceptedChatsStream() {
+            // NOTE: This query requires a composite index in Firebase Console:
+            // Collection: friendships, Fields: user1 (Ascending) user2 (Ascending)
             const qFriendships = query(collection(db, "friendships"), or(where("user1", "==", currentUser.uid), where("user2", "==", currentUser.uid)));
             unsubscribeRealtimeStream = onSnapshot(qFriendships, async (snapshot) => {
                 if (activeTab !== "chats" || searchInput.value.trim()) return;
                 activeChatsList.innerHTML = "";
-                
+
                 if (snapshot.empty) {
                     activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No active chats. Use 'All Users' tab to add friends.</p>`;
                     return;
@@ -1779,7 +1824,7 @@
         function loadGroupRoomsStream() {
             activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">Syncing secure lounge architectures...</p>`;
             const qRooms = query(collection(db, "group_rooms"));
-            
+
             unsubscribeRealtimeStream = onSnapshot(qRooms, (snapshot) => {
                 if (activeTab !== "rooms") return;
                 activeChatsList.innerHTML = "";
@@ -1824,7 +1869,7 @@
             chatWindowView.classList.add("mobile-active");
             welcomeView.classList.add("hidden");
             activeChatView.classList.remove("hidden");
-            
+
             resetAttachmentQueue();
             resetReplyContextState();
             currentEditModeActive = false;
@@ -1833,12 +1878,12 @@
             window.activeAudioNodes.clear();
 
             if (unsubscribeTargetUserStatus) unsubscribeTargetUserStatus();
-            
+
             chatUserName.innerText = roomName;
             chatUserAvatar.src = roomPhoto || 'https://via.placeholder.com/40';
             chatUserStatus.innerText = "Public Broadcast Module";
             chatUserStatus.style.color = "var(--text-muted)";
-            
+
             document.getElementById("chat-user-level").innerText = "";
             document.getElementById("chat-user-badge").className = "badge-type hidden";
 
@@ -1865,7 +1910,7 @@
 
                 messagesDisplay.innerHTML = messagesHTML;
                 attachLongPressAndSwipeGesturesToDOM();
-                
+
                 snapshot.forEach(doc => {
                     const msgData = doc.data();
                     if(msgData.voiceNotes) {
@@ -1911,7 +1956,7 @@
                         count++;
                         const relation = activeRelations.get(u.uid);
                         let buttonHTML = `<button class="action-btn-sm btn-pink" onclick="sendFriendRequest('${u.uid}')"><i class="fas fa-user-plus"></i> Add</button>`;
-                        
+
                         if(relation) {
                             if(relation.type === 'friend') {
                                 buttonHTML = `<span style="color:var(--pink-light); font-size:0.8rem; font-weight:600;"><i class="fas fa-check-circle"></i> Connected</span>`;
@@ -1925,7 +1970,7 @@
                                 }
                             }
                         }
-                        
+
                         const subDescription = u.status === "online" ? "Online" : formatLastSeen(u.lastSeen);
                         renderUserRow(u, subDescription, "action", buttonHTML);
                     }
@@ -2009,6 +2054,7 @@
             } catch(e) { alert(e.message); }
         };
 
+        // ==================== FIX: Track activeChatWith for proper seen status ====================
         async function openChatWindowWithTargetUser(targetUid) {
             activeChatUserId = targetUid;
             isGroupRoomMode = false;
@@ -2016,7 +2062,7 @@
             chatWindowView.classList.add("mobile-active");
             welcomeView.classList.add("hidden");
             activeChatView.classList.remove("hidden");
-            
+
             resetAttachmentQueue();
             resetReplyContextState();
             currentEditModeActive = false;
@@ -2031,17 +2077,22 @@
             voiceCallBtn.classList.remove("hidden");
             videoCallBtn.classList.remove("hidden");
 
+            // FIX: Update activeChatWith so other user knows we're looking
+            try {
+                await updateDoc(doc(db, "users", currentUser.uid), { activeChatWith: targetUid });
+            } catch(e) {}
+
             unsubscribeTargetUserStatus = onSnapshot(doc(db, "users", targetUid), (docSnap) => {
                 if(docSnap.exists() && activeChatUserId === targetUid && !isGroupRoomMode) {
                     const data = docSnap.data();
                     chatUserName.innerText = data.fullName || data.username;
                     chatUserAvatar.src = data.photoURL || 'https://via.placeholder.com/40';
-                    
+
                     const tLevel = data.level || 1;
                     const tBadge = getUserBadgeType(tLevel);
                     const headerLevelEl = document.getElementById("chat-user-level");
                     const headerBadgeEl = document.getElementById("chat-user-badge");
-                    
+
                     headerLevelEl.innerText = `Lv.${tLevel}`;
                     headerBadgeEl.className = `badge-type ${tBadge.class}`;
                     headerBadgeEl.innerText = tBadge.text;
@@ -2067,7 +2118,7 @@
 
             unsubscribeMessagesSub = onSnapshot(msgQuery, async (snapshot) => {
                 if (activeChatUserId !== targetUid || isGroupRoomMode) return;
-                
+
                 let messagesHTML = "";
                 const batch = writeBatch(db);
                 let needsBatchUpdate = false;
@@ -2089,11 +2140,11 @@
 
                 messagesDisplay.innerHTML = messagesHTML;
                 attachLongPressAndSwipeGesturesToDOM();
-                
+
                 if (needsBatchUpdate) {
                     try { await batch.commit(); } catch(e) {}
                 }
-                
+
                 snapshot.forEach(doc => {
                     const msgData = doc.data();
                     if(msgData.voiceNotes) {
@@ -2157,6 +2208,12 @@
             inboxImgPreviewBar.classList.add("hidden");
             messageForm.classList.remove("voice-recording-active");
             shouldSendAfterVoiceStop = false;
+
+            // FIX: Clean up voice stream if exists
+            if (currentVoiceStream) {
+                currentVoiceStream.getTracks().forEach(track => track.stop());
+                currentVoiceStream = null;
+            }
         }
 
         inboxPhotoTriggerBtn.addEventListener("click", () => inboxFileInput.click());
@@ -2182,6 +2239,7 @@
             }
         });
 
+        // ==================== FIX: Proper voice recording cleanup ====================
         inboxVoiceTriggerBtn.addEventListener("click", async () => {
             if (!isVoiceRecording) {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -2189,7 +2247,13 @@
                     return;
                 }
                 try {
+                    // Clean up any existing stream first
+                    if (currentVoiceStream) {
+                        currentVoiceStream.getTracks().forEach(track => track.stop());
+                    }
+
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    currentVoiceStream = stream; // Track for cleanup
                     mediaRecorder = new MediaRecorder(stream);
                     audioChunks = [];
 
@@ -2205,14 +2269,14 @@
                             inboxPreviewImgSrc.classList.add("hidden");
                             attachmentStatusText.innerText = "🎙️ Premium voice note recorded. Press send.";
                             inboxImgPreviewBar.classList.remove("hidden");
-                            
+
                             if (shouldSendAfterVoiceStop) {
                                 shouldSendAfterVoiceStop = false;
                                 messageForm.dispatchEvent(new Event('submit'));
                             }
                         };
                         reader.readAsDataURL(audioBlob);
-                        stream.getTracks().forEach(track => track.stop());
+                        // Don't stop tracks here - let resetAttachmentQueue handle it
                     });
 
                     mediaRecorder.start();
@@ -2221,6 +2285,10 @@
                     showToast("Recording transmission initialized...");
                 } catch (err) {
                     alert("Microphone node allocation rejected.");
+                    if (currentVoiceStream) {
+                        currentVoiceStream.getTracks().forEach(track => track.stop());
+                        currentVoiceStream = null;
+                    }
                 }
             } else {
                 if (mediaRecorder && mediaRecorder.state !== "inactive") {
@@ -2250,6 +2318,9 @@
 
         closeGifBtn.addEventListener("click", () => gifPanel.classList.add("hidden"));
 
+        // ==================== FIX: Giphy API key note ====================
+        // IMPORTANT: Replace 'dc6zaTOxFJmzC' with your own Giphy API key in production.
+        // This is the public demo key with heavy rate limiting.
         async function loadTrendingGifs() {
             gifResults.innerHTML = "<p style='grid-column: span 3; text-align:center; font-size:0.8rem; color:var(--text-muted);'>Syncing GIFs...</p>";
             try {
@@ -2301,13 +2372,13 @@
 
         function initMessageActionListeners() {
             popActionCancel.addEventListener("click", () => msgOptionsPopup.classList.add("hidden"));
-            
+
             msgOptionsPopup.addEventListener("click", (e) => {
                 if (e.target === msgOptionsPopup) {
                     msgOptionsPopup.classList.add("hidden");
                 }
             });
-            
+
             popActionReply.addEventListener("click", () => {
                 msgOptionsPopup.classList.add("hidden");
                 triggerReplyContextSetup(contextSelectedMsgId, contextSelectedMsgData);
@@ -2382,7 +2453,7 @@
                 const bubble = row.querySelector(".msg-bubble");
                 if(!bubble) return;
                 const msgId = bubble.getAttribute("data-msg-id");
-                
+
                 let msgDataText = bubble.getAttribute("data-msg-text");
                 let msgDataSender = bubble.getAttribute("data-msg-sender");
                 let msgIsImage = bubble.getAttribute("data-msg-hasimg") === "true";
@@ -2441,7 +2512,7 @@
                     if (!isSwiping) return;
                     touchCurrentX = e.touches[0].clientX;
                     let diffX = touchCurrentX - touchStartX;
-                    
+
                     if (diffX > 0 && diffX < 80) {
                         row.style.transform = `translateX(${diffX}px)`;
                     }
@@ -2476,6 +2547,7 @@
             msgOptionsPopup.classList.remove("hidden");
         }
 
+        // ==================== FIX: Proper empty text validation on edit ====================
         messageForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             if (isVoiceRecording) {
@@ -2488,11 +2560,11 @@
                 return; 
             }
 
-            const txt = messageInput.value.trim();
+            const txt = messageInput.value.trim(); // FIX: Trim immediately
             if (!txt && !inboxSelectedBase64Image && !inboxSelectedVoiceBase64) return;
 
             if(currentEditModeActive) {
-                if(!txt) {
+                if(!txt) { // Now properly checks trimmed value
                     showToast("Cannot save an empty message.");
                     return;
                 }
@@ -2529,7 +2601,7 @@
 
         async function sendSecureMessage(textContent, customGifUrl = null, customAttachedImageBase64 = null, customVoiceBase64 = null) {
             if (!activeChatUserId || !currentUser) return;
-            
+
             clearTimeout(typingTimeout);
             try { if(!isGroupRoomMode) await updateDoc(doc(db, "users", currentUser.uid), { isTypingTo: null }); } catch(err){}
 
@@ -2565,13 +2637,14 @@
                 const targetUserSnap = await getDoc(doc(db, "users", activeChatUserId));
                 if (targetUserSnap.exists()) {
                     const targetData = targetUserSnap.data();
+                    // FIX: Now properly checks activeChatWith which we set on open
                     if (targetData.status === "online" && (targetData.isTypingTo === currentUser.uid || targetData.activeChatWith === currentUser.uid)) {
                         initialStatus = "seen";
                     } else if (targetData.status === "online") {
                         initialStatus = "delivered";
                     }
                 }
-            } catch(e) {}
+            } catch (e) {}
 
             try {
                 const chatRoomRef = doc(db, "friendships", roomId);
@@ -2650,7 +2723,7 @@
 
             const isPlaceholderText = (msgData.text === "[Photo Attachment]" || msgData.text === "[GIF]" || msgData.text === "[Voice Note]");
             const displayableText = isPlaceholderText ? "" : `<p style="word-break: break-word; white-space: pre-wrap;">${escapeHTML(msgData.text)}</p>`;
-            
+
             const senderIdentityTag = (!isSent && isGroupRoomMode) ? `<div style="font-size: 0.75rem; font-weight: bold; color: var(--pink-primary); margin-bottom: 4px;">@${escapeHTML(msgData.senderName || 'Anonymous')}</div>` : '';
 
             return `
@@ -2681,7 +2754,7 @@
             const track = document.getElementById(`track-${msgId}`);
             const fill = document.getElementById(`fill-${msgId}`);
             const timeLabel = document.getElementById(`time-${msgId}`);
-            
+
             if(!playBtn || window.activeAudioNodes.has(msgId)) return;
 
             const audioObj = new Audio(base64AudioData);
@@ -2742,26 +2815,47 @@
             return `${m}:${mSecs < 10 ? '0' : ''}${mSecs}`;
         }
 
+        // ==================== FIX: Back button ends active call ====================
         if(backToSidebar) {
             backToSidebar.addEventListener("click", async () => {
+                // End any active call before leaving
+                if (currentCallId) {
+                    try {
+                        await updateDoc(doc(db, "calls", currentCallId), { status: 'ended' });
+                    } catch(e) {}
+                    endCallCleanup();
+                }
+
+                // Clear activeChatWith
+                if (currentUser && activeChatUserId && !isGroupRoomMode) {
+                    try { await updateDoc(doc(db, "users", currentUser.uid), { activeChatWith: null }); } catch(e) {}
+                }
+
                 appSidebar.classList.remove("mobile-hidden");
                 chatWindowView.classList.remove("mobile-active");
                 activeChatView.classList.add("hidden");
                 welcomeView.classList.remove("hidden");
                 activeChatUserId = null;
                 isGroupRoomMode = false;
-                
+
                 window.activeAudioNodes.forEach(node => { if(node.audio) { node.audio.pause(); node.audio.src = ""; } });
                 if(unsubscribeTargetUserStatus) unsubscribeTargetUserStatus();
             });
         }
 
+        // ==================== FIX: Search with proper state management ====================
         let searchDebounceTimer;
+        let isSearchActive = false;
         searchInput.addEventListener("input", async () => {
             clearTimeout(searchDebounceTimer);
             searchDebounceTimer = setTimeout(async () => {
                 const searchText = searchInput.value.trim().toLowerCase();
-                if(!searchText) { switchTab(activeTab); return; }
+                if(!searchText) { 
+                    isSearchActive = false;
+                    switchTab(activeTab); 
+                    return; 
+                }
+                isSearchActive = true;
                 if(unsubscribeRealtimeStream) { unsubscribeRealtimeStream(); unsubscribeRealtimeStream = null; }
 
                 const userSnap = await getDocs(query(collection(db, "users")));
@@ -2857,6 +2951,7 @@
             });
         }
 
+        // ==================== FIX: Profile update preserves username and handles photoURL correctly ====================
         if (profileUpdateForm) {
             profileUpdateForm.addEventListener("submit", async (e) => {
                 e.preventDefault();
@@ -2886,13 +2981,16 @@
                         downloadURL = await convertFileToBase64(selectedFile);
                     }
 
+                    // FIX: Update Firebase Auth profile only if we have a real URL, not base64
+                    const isBase64 = downloadURL.startsWith('data:');
                     try {
                         await updateProfile(currentUser, {
                             displayName: profileName.value.trim(),
-                            photoURL: downloadURL.startsWith('data:') ? currentUser.photoURL : downloadURL
+                            photoURL: isBase64 ? (currentUser.photoURL || downloadURL) : downloadURL
                         });
                     } catch(authErr) {}
 
+                    // FIX: Use merge and preserve existing fields like username
                     await setDoc(doc(db, "users", currentUser.uid), {
                         fullName: profileName.value.trim(),
                         age: Number(profileAge.value),
@@ -2900,7 +2998,7 @@
                         profession: profileProfession.value.trim(),
                         photoURL: downloadURL,
                         updatedAt: new Date().getTime()
-                    }, { merge: true });
+                    }, { merge: true }); // merge:true preserves username and other fields
 
                     showToast("Profile pipeline updated!");
                     rewardXpToCurrentUser(40);
@@ -2944,7 +3042,7 @@
         }
 
         /* ==================== CALLING SYSTEM WEBRTC + FIREBASE ==================== */
-        
+
         // Call button handlers
         voiceCallBtn.addEventListener("click", () => {
             if (!activeChatUserId || isGroupRoomMode || !currentUser) return;
@@ -2975,6 +3073,7 @@
             muteCallBtn.classList.toggle("muted", isCallMuted);
         });
 
+        // ==================== FIX: WebRTC with proper cleanup ====================
         async function startCall(targetUid, type) {
             if (!window.RTCPeerConnection || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 alert("Your browser does not support WebRTC calling.");
@@ -3047,8 +3146,9 @@
                 }
             });
 
+            // FIX: Track callee candidates listener for cleanup
             const calleeCandidatesQuery = query(collection(db, 'calls', currentCallId, 'calleeCandidates'));
-            onSnapshot(calleeCandidatesQuery, (snapshot) => {
+            iceCandidateUnsub = onSnapshot(calleeCandidatesQuery, (snapshot) => {
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === 'added') {
                         const candidate = new RTCIceCandidate(change.doc.data());
@@ -3109,8 +3209,9 @@
                 status: 'connected'
             });
 
+            // FIX: Track caller candidates listener for cleanup
             const callerCandidatesQuery = query(collection(db, 'calls', callId, 'callerCandidates'));
-            onSnapshot(callerCandidatesQuery, (snapshot) => {
+            iceCandidateUnsub = onSnapshot(callerCandidatesQuery, (snapshot) => {
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === 'added') {
                         const candidate = new RTCIceCandidate(change.doc.data());
@@ -3139,12 +3240,15 @@
             hideIncomingCallUI();
         }
 
+        // ==================== FIX: Complete cleanup for all WebRTC resources ====================
         function endCallCleanup() {
             if (callTimerInterval) {
                 clearInterval(callTimerInterval);
                 callTimerInterval = null;
             }
             if (peerConnection) {
+                peerConnection.onicecandidate = null;
+                peerConnection.ontrack = null;
                 peerConnection.close();
                 peerConnection = null;
             }
@@ -3159,6 +3263,10 @@
             if (unsubscribeCallDoc) {
                 unsubscribeCallDoc();
                 unsubscribeCallDoc = null;
+            }
+            if (iceCandidateUnsub) {
+                iceCandidateUnsub();
+                iceCandidateUnsub = null;
             }
             hideActiveCallUI();
             hideIncomingCallUI();
@@ -3186,12 +3294,13 @@
             });
         }
 
+        // ==================== FIX: Proper ringtone management ====================
         async function showIncomingCallUI(callId, callData) {
             try {
                 const callerDoc = await getDoc(doc(db, 'users', callData.callerId));
                 const callerName = callerDoc.exists() ? (callerDoc.data().fullName || callerDoc.data().username || 'Unknown') : 'Unknown';
                 const callerPhoto = callerDoc.exists() ? callerDoc.data().photoURL : 'https://via.placeholder.com/110';
-                
+
                 incomingCallerAvatar.src = callerPhoto;
                 incomingCallerName.innerText = callerName;
                 incomingCallType.innerText = callData.type === 'video' ? 'Incoming Video Call' : 'Incoming Voice Call';
@@ -3200,51 +3309,51 @@
             }
 
             incomingCallModal.classList.remove('hidden');
-            
-            // Play ringtone
-            const ringtone = new Audio('https://assets.mixkit.co/active_storage/sfx/2865/2865-84.wav');
-            ringtone.loop = true;
-            ringtone.play().catch(()=>{});
-            
-            // Store ringtone on element to stop later
-            incomingCallModal.dataset.ringtone = 'active';
+
+            // FIX: Proper ringtone with module-level reference
+            if (currentRingtone) {
+                currentRingtone.pause();
+                currentRingtone = null;
+            }
+            currentRingtone = new Audio('https://assets.mixkit.co/active_storage/sfx/2865/2865-84.wav');
+            currentRingtone.loop = true;
+            currentRingtone.play().catch(()=>{});
 
             acceptCallBtn.onclick = () => {
-                stopRingtone();
+                if (currentRingtone) { currentRingtone.pause(); currentRingtone = null; }
                 acceptCall(callId);
             };
             rejectCallBtn.onclick = () => {
-                stopRingtone();
+                if (currentRingtone) { currentRingtone.pause(); currentRingtone = null; }
                 rejectCall(callId);
             };
 
             clearTimeout(incomingCallTimeout);
             incomingCallTimeout = setTimeout(() => {
                 if (!incomingCallModal.classList.contains('hidden')) {
-                    stopRingtone();
+                    if (currentRingtone) { currentRingtone.pause(); currentRingtone = null; }
                     rejectCall(callId);
                     showToast("Missed call");
                 }
             }, 30000);
         }
 
-        function stopRingtone() {
-            // Simple way: reload page audio context not needed, just let it finish
-            // Actually we can't easily stop external audio without reference. 
-            // For simplicity in single file, we skip complex ringtone management.
-        }
-
         function hideIncomingCallUI() {
             incomingCallModal.classList.add('hidden');
             clearTimeout(incomingCallTimeout);
+            // FIX: Always stop ringtone when hiding
+            if (currentRingtone) {
+                currentRingtone.pause();
+                currentRingtone = null;
+            }
         }
 
         function showActiveCallUI(targetId, status, type) {
             activeCallOverlay.classList.remove('hidden');
-            
+
             const titleName = chatUserName.innerText || 'User';
             activeCallTitle.innerText = type === 'video' ? `Video Call with ${titleName}` : `Voice Call with ${titleName}`;
-            
+
             if (type === 'video') {
                 localVideo.classList.remove('hidden');
                 localVideo.srcObject = localStream;

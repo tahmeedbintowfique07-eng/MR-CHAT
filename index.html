@@ -29,8 +29,6 @@
             --status-seen: #00E6FF;
             --dropdown-bg: #1F2029;
             --dropdown-item-hover: rgba(255, 0, 127, 0.1);
-            --note-bubble-bg: #FFFFFF;
-            --note-bubble-text: #12131C;
         }
 
         [data-theme="white"] {
@@ -49,8 +47,6 @@
             --status-seen: #00A3C4;
             --dropdown-bg: #FFFFFF;
             --dropdown-item-hover: rgba(0, 0, 0, 0.05);
-            --note-bubble-bg: #EBF0F5;
-            --note-bubble-text: #1A1D24;
         }
 
         /* Inbox Multi-Theme Styling Matrices */
@@ -289,87 +285,8 @@
 
         .icon-btn:hover { color: var(--pink-primary); }
 
-        .search-box { padding: 15px 20px 5px 20px; }
+        .search-box { padding: 15px 20px; }
         .search-box .input-group { margin-bottom: 0; }
-
-        /* PREMIUM INSTAGRAM INSTANT NOTES SYSTEM UI ARCHITECTURE */
-        .notes-horizontal-container {
-            display: flex;
-            gap: 18px;
-            padding: 12px 20px;
-            overflow-x: auto;
-            white-space: nowrap;
-            border-bottom: 1px solid var(--glass-border);
-            -webkit-overflow-scrolling: touch;
-        }
-        .notes-horizontal-container::-webkit-scrollbar { display: none; }
-        
-        .note-wrapper-item {
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-            width: 75px;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        
-        .note-bubble-cloud {
-            position: absolute;
-            top: -12px;
-            background: var(--note-bubble-bg);
-            color: var(--note-bubble-text);
-            padding: 5px 10px;
-            border-radius: 14px;
-            font-size: 0.72rem;
-            max-width: 90px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            text-align: center;
-            white-space: normal;
-            word-break: break-word;
-            line-height: 1.2;
-            z-index: 5;
-            font-weight: 500;
-        }
-        /* Bubble cloud small tail */
-        .note-bubble-cloud::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-width: 5px 5px 0;
-            border-style: solid;
-            border-color: var(--note-bubble-bg) transparent;
-            display: block;
-            width: 0;
-        }
-
-        .note-avatar-frame {
-            width: 58px;
-            height: 58px;
-            border-radius: 50%;
-            border: 2px solid var(--pink-primary);
-            padding: 2px;
-            margin-top: 14px;
-            background: var(--bg-sidebar);
-        }
-        .note-avatar-frame img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        
-        .note-author-title {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-top: 6px;
-            text-align: center;
-            width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
 
         .tabs-container {
             display: flex;
@@ -599,7 +516,7 @@
         }
 
         .msg-meta {
-            font-size: 0.7 roll;
+            font-size: 0.7rem;
             color: rgba(255,255,255,0.6);
         }
         .received .msg-meta {
@@ -828,9 +745,6 @@
                 </div>
             </div>
 
-            <div id="instant-notes-bar" class="notes-horizontal-container">
-                </div>
-
             <div class="tabs-container">
                 <button id="tab-chats" class="tab-link active">Chats</button>
                 <button id="tab-friends" class="tab-link">All Users</button>
@@ -946,23 +860,6 @@
         </div>
     </div>
 
-    <div id="note-create-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 10005; padding: 20px;">
-        <div class="auth-box" style="position: relative; max-width: 380px; width: 100%;">
-            <button id="close-note-modal-btn" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;"><i class="fas fa-times"></i></button>
-            <div class="auth-header">
-                <h2>Share a thought</h2>
-                <p>Notes expire safely after 24 hours.</p>
-            </div>
-            <form id="note-publish-form">
-                <div class="input-group">
-                    <i class="fas fa-pen-nib"></i>
-                    <input type="text" id="note-text-input" placeholder="What's on your mind? (max 60 chars)" maxlength="60" required>
-                </div>
-                <button type="submit" class="main-btn">Share Note</button>
-            </form>
-        </div>
-    </div>
-
     <div id="app-notification" class="toast hidden"></div>
 
     <script type="module">
@@ -1011,7 +908,6 @@
         const tabFriends = document.getElementById("tab-friends");
         const tabRequests = document.getElementById("tab-requests");
         const reqBadge = document.getElementById("req-badge");
-        const instantNotesBar = document.getElementById("instant-notes-bar");
 
         // Theme Interactive Feature Mapping Targets
         const webThemeTriggerBtn = document.getElementById("web-theme-trigger-btn");
@@ -1050,18 +946,11 @@
         const uploadDpLabel = document.getElementById("upload-dp-label");
         const targetUserProfileTrigger = document.getElementById("target-user-profile-trigger");
 
-        // Note Management Elements
-        const noteCreateModal = document.getElementById("note-create-modal");
-        const closeNoteModalBtn = document.getElementById("close-note-modal-btn");
-        const notePublishForm = document.getElementById("note-publish-form");
-        const noteTextInput = document.getElementById("note-text-input");
-
         let currentUser = null;
         let activeChatUserId = null;
         let unsubscribeMessagesSub = null;
         let unsubscribeRealtimeStream = null; 
         let unsubscribeTargetUserStatus = null;
-        let unsubscribeNotesStream = null;
         let isLoginMode = false; 
         let activeTab = "chats";
         let typingTimeout = null;
@@ -1073,6 +962,7 @@
         let audioChunks = [];
         let isVoiceRecording = false;
 
+        // Custom Premium Global Audio Tracking Map
         window.activeAudioNodes = new Map();
 
         /* ==================== GLOBAL REAL-TIME MOBILE VIEWPORT ENGINE ==================== */
@@ -1081,8 +971,19 @@
                 let vh = window.innerHeight * 0.01;
                 document.documentElement.style.setProperty('--vh', `${vh}px`);
             };
+            
             window.addEventListener('resize', updateViewportHeightValue);
             window.addEventListener('orientationchange', updateViewportHeightValue);
+            
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', () => {
+                    updateViewportHeightValue();
+                    if(activeChatUserId) {
+                        setTimeout(() => { messagesDisplay.scrollTop = messagesDisplay.scrollHeight; }, 80);
+                    }
+                });
+                window.visualViewport.addEventListener('scroll', updateViewportHeightValue);
+            }
             updateViewportHeightValue();
         }
         configureDynamicViewportMatrix();
@@ -1241,12 +1142,10 @@
                 try { await updateDoc(doc(db, "users", user.uid), { status: "online", lastSeen: new Date().getTime() }); } catch(e) {}
                 switchTab("chats");
                 listenRequestBadge();
-                listenRealtimeInstantNotes(); 
             } else {
                 currentUser = null;
                 appContainer.classList.add("hidden");
                 authContainer.classList.remove("hidden");
-                if(unsubscribeNotesStream) unsubscribeNotesStream();
             }
         });
 
@@ -1266,100 +1165,6 @@
                 } else { reqBadge.style.display = "none"; }
             });
         }
-
-        /* ==================== REAL-TIME NOTES PIPELINE LAYER (INSTAGRAM STYLE - ONLY TEXT NOTE) ==================== */
-        function listenRealtimeInstantNotes() {
-            const oneDayAgo = new Date().getTime() - (24 * 60 * 60 * 1000);
-            const qNotes = query(collection(db, "instant_notes"), where("timestamp", ">=", oneDayAgo));
-            
-            unsubscribeNotesStream = onSnapshot(qNotes, async (snapshot) => {
-                instantNotesBar.innerHTML = "";
-                
-                // 1. Render Owner's Note Bubble Trigger
-                let ownerNoteHTML = `
-                    <div class="note-wrapper-item" id="owner-note-node-btn">
-                        <div class="note-bubble-cloud" id="owner-note-bubble-txt">Make space...</div>
-                        <div class="note-avatar-frame">
-                            <img id="owner-note-avatar-src" src="https://via.placeholder.com/50">
-                        </div>
-                        <div class="note-author-title">Your note</div>
-                    </div>
-                `;
-                instantNotesBar.innerHTML = ownerNoteHTML;
-
-                // Sync current users display info into trigger
-                setTimeout(async () => {
-                    const uDoc = await getDoc(doc(db, "users", currentUser.uid));
-                    if(uDoc.exists()) {
-                        document.getElementById("owner-note-avatar-src").src = uDoc.data().photoURL || currentUser.photoURL;
-                    }
-                    document.getElementById("owner-note-node-btn").addEventListener("click", () => {
-                        noteCreateModal.classList.remove("hidden");
-                    });
-                }, 50);
-
-                if (snapshot.empty) return;
-
-                // 2. Aggregate and Render Global Active Notes Nodes
-                snapshot.forEach(async (docNote) => {
-                    const noteData = docNote.data();
-                    if(noteData.uid === currentUser.uid) {
-                        const ownerBubble = document.getElementById("owner-note-bubble-txt");
-                        if(ownerBubble) ownerBubble.innerText = noteData.text;
-                        return;
-                    }
-
-                    // Build Dynamic Node Element (Only Text Node Supported)
-                    const itemNode = document.createElement("div");
-                    itemNode.className = "note-wrapper-item";
-
-                    itemNode.innerHTML = `
-                        <div class="note-bubble-cloud">
-                            <div>${escapeHTML(noteData.text)}</div>
-                        </div>
-                        <div class="note-avatar-frame">
-                            <img src="${noteData.authorAvatar || 'https://via.placeholder.com/50'}">
-                        </div>
-                        <div class="note-author-title">${escapeHTML(noteData.authorName)}</div>
-                    `;
-
-                    itemNode.addEventListener("click", () => {
-                        window.openChatWindowWithTargetUser(noteData.uid);
-                    });
-                    
-                    instantNotesBar.appendChild(itemNode);
-                });
-            });
-        }
-
-        // Publish Instant Notes Submit Trigger (Text Data Pipeline Only)
-        notePublishForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const textVal = noteTextInput.value.trim();
-            
-            if(!textVal) return;
-
-            try {
-                const uSnap = await getDoc(doc(db, "users", currentUser.uid));
-                const uData = uSnap.exists() ? uSnap.data() : {};
-                
-                await setDoc(doc(db, "instant_notes", currentUser.uid), {
-                    uid: currentUser.uid,
-                    text: textVal,
-                    timestamp: new Date().getTime(),
-                    authorName: uData.fullName || uData.username || currentUser.displayName,
-                    authorAvatar: uData.photoURL || currentUser.photoURL
-                });
-
-                showToast("Note synchronized to feed!");
-                notePublishForm.reset();
-                noteCreateModal.classList.add("hidden");
-            } catch(err) {
-                alert("Pipeline execution failed: " + err.message);
-            }
-        });
-
-        closeNoteModalBtn.addEventListener("click", () => noteCreateModal.classList.add("hidden"));
 
         function switchTab(tabName) {
             activeTab = tabName;

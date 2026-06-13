@@ -2624,6 +2624,8 @@ let socialProfileUnsub = null;
                 listenForIncomingCalls();
                 try { setupGamesModal(); } catch(e) { console.warn("gamesSetup:", e); }
                 try { setupLeaderboardModals(); } catch(e) { console.warn("lbSetup:", e); }
+                try { setupDiceGameListeners(); } catch(e) { console.warn("diceSetup:", e); }
+                try { setupQuizGame(); } catch(e) { console.warn("quizSetup:", e); }
             } else {
                 currentUser = null;
                 appContainer.classList.add("hidden");
@@ -4126,6 +4128,12 @@ let socialProfileUnsub = null;
                 if (levelLb && !levelLb.classList.contains("hidden")) {
                     levelLb.classList.add("hidden");
                 }
+                const quizModal = document.getElementById('quiz-modal');
+                if (quizModal && !quizModal.classList.contains("hidden")) {
+                    quizModal.classList.add("hidden");
+                    stopQuizTimer();
+                    quizActive = false;
+                }
             }
         });
 
@@ -4549,6 +4557,543 @@ async function openSocialProfile(targetUid) {
         console.log('[Profile] Profile fully loaded');
     } catch (e) {
         console.error('[Profile] openSocialProfile fatal error:', e);
+    }
+}
+
+
+// ==================== GAMES, LEADERBOARD & QUIZ SYSTEM ====================
+
+let goldLbUnsub = null;
+let levelLbUnsub = null;
+let quizLbUnsub = null;
+
+const quizQuestions = [
+    { q: "What is the chemical symbol for water?", options: ["H2O", "CO2", "O2", "NaCl"], answer: 0, category: "Chemistry" },
+    { q: "What planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter", "Saturn"], answer: 1, category: "Astronomy" },
+    { q: "What is the speed of light in vacuum?", options: ["300,000 km/s", "150,000 km/s", "1,000 km/s", "Infinite"], answer: 0, category: "Physics" },
+    { q: "Which gas do plants absorb from the atmosphere?", options: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"], answer: 2, category: "Biology" },
+    { q: "What is the hardest natural substance on Earth?", options: ["Gold", "Iron", "Diamond", "Quartz"], answer: 2, category: "Chemistry" },
+    { q: "What force keeps planets in orbit around the Sun?", options: ["Magnetic", "Gravity", "Nuclear", "Electric"], answer: 1, category: "Physics" },
+    { q: "What is the largest organ in the human body?", options: ["Heart", "Brain", "Skin", "Liver"], answer: 2, category: "Biology" },
+    { q: "What particle has a negative charge?", options: ["Proton", "Neutron", "Electron", "Photon"], answer: 2, category: "Physics" },
+    { q: "What is the main gas in Earth's atmosphere?", options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"], answer: 2, category: "Chemistry" },
+    { q: "How many bones are in the adult human body?", options: ["106", "206", "256", "306"], answer: 1, category: "Biology" },
+    { q: "What is the unit of electrical resistance?", options: ["Volt", "Ampere", "Ohm", "Watt"], answer: 2, category: "Physics" },
+    { q: "Which element has the atomic number 1?", options: ["Helium", "Hydrogen", "Lithium", "Carbon"], answer: 1, category: "Chemistry" },
+    { q: "What process do plants use to make food?", options: ["Respiration", "Photosynthesis", "Digestion", "Fermentation"], answer: 1, category: "Biology" },
+    { q: "What is the closest star to Earth?", options: ["Proxima Centauri", "Sirius", "The Sun", "Alpha Centauri"], answer: 2, category: "Astronomy" },
+    { q: "What is the pH of pure water?", options: ["0", "7", "14", "1"], answer: 1, category: "Chemistry" }
+];
+
+let currentQuizIndex = 0;
+let quizScore = 0;
+let quizTimer = null;
+let quizTimeLeft = 15;
+let quizAnswered = false;
+let quizActive = false;
+
+function setupGamesModal() {
+    const openGamesBtn = document.getElementById('open-games-btn');
+    const gamesModal = document.getElementById('games-modal');
+    const closeGamesBtn = document.getElementById('close-games-btn');
+    const diceCard = document.getElementById('games-dice-card');
+
+    if (openGamesBtn && gamesModal) {
+        openGamesBtn.addEventListener('click', () => {
+            gamesModal.classList.remove('hidden');
+        });
+    }
+    if (closeGamesBtn && gamesModal) {
+        closeGamesBtn.addEventListener('click', () => gamesModal.classList.add('hidden'));
+    }
+    if (diceCard) {
+        diceCard.addEventListener('click', () => {
+            if (gamesModal) gamesModal.classList.add('hidden');
+            document.getElementById('dice-game-modal').classList.remove('hidden');
+            loadDiceGame();
+        });
+    }
+    const gamesBox = gamesModal ? gamesModal.querySelector('div[style*="display: flex; flex-direction: column; gap: 15px"]') : null;
+    if (gamesBox && !document.getElementById('games-quiz-card')) {
+        const quizCard = document.createElement('div');
+        quizCard.id = 'games-quiz-card';
+        quizCard.style.cssText = 'background: var(--bg-card); border-radius: 16px; padding: 20px; border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.2s; margin-top: 15px;';
+        quizCard.onmouseover = function() { this.style.borderColor = 'var(--pink-primary)'; };
+        quizCard.onmouseout = function() { this.style.borderColor = 'var(--glass-border)'; };
+        quizCard.innerHTML = '<div style="display: flex; align-items: center; gap: 15px;"><div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #9D00FF, var(--pink-primary)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;"><i class="fas fa-brain" style="color: white;"></i></div><div style="flex: 1;"><h3 style="font-size: 1rem; margin-bottom: 4px;">Science Quiz</h3><p style="font-size: 0.8rem; color: var(--text-muted);">Test your knowledge. Win Gold instantly.</p></div><i class="fas fa-chevron-right" style="color: var(--text-muted);"></i></div>';
+        quizCard.addEventListener('click', () => {
+            if (gamesModal) gamesModal.classList.add('hidden');
+            document.getElementById('quiz-modal').classList.remove('hidden');
+            resetQuizUI();
+        });
+        gamesBox.appendChild(quizCard);
+    }
+}
+
+function setupLeaderboardModals() {
+    const closeGold = document.getElementById('close-gold-leaderboard');
+    const closeLevel = document.getElementById('close-level-leaderboard');
+    if (closeGold) {
+        closeGold.addEventListener('click', () => {
+            document.getElementById('gold-leaderboard-modal').classList.add('hidden');
+            if (goldLbUnsub) { goldLbUnsub(); goldLbUnsub = null; }
+        });
+    }
+    if (closeLevel) {
+        closeLevel.addEventListener('click', () => {
+            document.getElementById('level-leaderboard-modal').classList.add('hidden');
+            if (levelLbUnsub) { levelLbUnsub(); levelLbUnsub = null; }
+        });
+    }
+}
+
+function setupDiceGameListeners() {
+    const betBtns = document.querySelectorAll('.bet-btn');
+    const rollBtn = document.getElementById('roll-dice-btn');
+    const closeBtn = document.getElementById('close-dice-btn');
+    if (!betBtns.length || !rollBtn || !closeBtn) {
+        setTimeout(setupDiceGameListeners, 100);
+        return;
+    }
+    betBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            betBtns.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedDiceBet = parseInt(btn.dataset.bet);
+        });
+    });
+    rollBtn.addEventListener('click', playDiceGame);
+    closeBtn.addEventListener('click', () => {
+        document.getElementById('dice-game-modal').classList.add('hidden');
+    });
+}
+
+async function loadDiceGame() {
+    if (!currentUser) return;
+    try {
+        const snap = await getDoc(doc(db, "users", currentUser.uid));
+        const data = snap.data();
+        const el = document.getElementById('dice-gold-balance');
+        if (el) el.innerText = ((data.gold || 0)).toLocaleString();
+    } catch(e) {}
+    loadDiceHistory();
+}
+
+async function loadDiceHistory() {
+    const container = document.getElementById('dice-history');
+    if (!container) return;
+    try {
+        const q = query(collection(db, "dice_games"), where("userId", "==", currentUser.uid));
+        const snap = await getDocs(q);
+        container.innerHTML = "";
+        if (snap.empty) {
+            container.innerHTML = "<p style='text-align:center; opacity:0.5; padding: 10px;'>No games yet</p>";
+            return;
+        }
+        const games = [];
+        snap.forEach(d => games.push(d.data()));
+        games.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        let html = "";
+        games.forEach(data => {
+            const net = data.winnings - data.bet;
+            const color = net > 0 ? '#34C759' : (net < 0 ? '#FF3B30' : 'var(--text-muted)');
+            const sign = net > 0 ? '+' : '';
+            html += '<div class="dice-history-item"><span>Bet ' + data.bet + ' | Roll ' + data.roll + '</span><span style="color:' + color + '; font-weight:600;">' + sign + net + '</span></div>';
+        });
+        container.innerHTML = html;
+    } catch(e) {
+        container.innerHTML = "<p style='text-align:center; color:red; padding: 10px;'>Error loading history</p>";
+    }
+}
+
+async function playDiceGame() {
+    if (!currentUser) return;
+    const bet = selectedDiceBet;
+    const userRef = doc(db, "users", currentUser.uid);
+    let gold = 0;
+    try {
+        const snap = await getDoc(userRef);
+        gold = (snap.data() || {}).gold || 0;
+    } catch(e) { return; }
+
+    if (gold < bet) {
+        showToast("Not enough Gold!");
+        return;
+    }
+
+    const diceEl = document.getElementById('dice-1');
+    const resultEl = document.getElementById('dice-result');
+    const rollBtn = document.getElementById('roll-dice-btn');
+
+    if (!diceEl || !resultEl || !rollBtn) return;
+
+    rollBtn.disabled = true;
+    diceEl.classList.add('rolling');
+    resultEl.innerText = "Rolling...";
+    resultEl.style.color = "";
+
+    try {
+        await updateDoc(userRef, { gold: increment(-bet) });
+    } catch(e) { return; }
+
+    const goldBalEl = document.getElementById('dice-gold-balance');
+    if (goldBalEl) goldBalEl.innerText = (gold - bet).toLocaleString();
+
+    setTimeout(async () => {
+        const roll = Math.floor(Math.random() * 6) + 1;
+        diceEl.classList.remove('rolling');
+        const face = diceEl.querySelector('.dice-face');
+        if (face) face.innerText = roll;
+
+        let winnings = 0;
+        if (roll <= 2) winnings = 0;
+        else if (roll <= 4) winnings = bet;
+        else if (roll === 5) winnings = bet * 2;
+        else winnings = bet * 3;
+
+        if (winnings > 0) {
+            try {
+                await updateDoc(userRef, { gold: increment(winnings) });
+            } catch(e) {}
+            if (goldBalEl) goldBalEl.innerText = (gold - bet + winnings).toLocaleString();
+        }
+
+        try {
+            await addDoc(collection(db, "dice_games"), {
+                userId: currentUser.uid,
+                bet: bet,
+                roll: roll,
+                winnings: winnings,
+                timestamp: new Date().getTime()
+            });
+        } catch(e) {}
+
+        if (roll <= 2) {
+            resultEl.innerText = 'Rolled ' + roll + '. You lost ' + bet + ' Gold.';
+            resultEl.style.color = "#FF3B30";
+        } else if (roll <= 4) {
+            resultEl.innerText = 'Rolled ' + roll + '. Break even.';
+            resultEl.style.color = "var(--text-muted)";
+        } else if (roll === 5) {
+            resultEl.innerText = 'Rolled ' + roll + '! Won ' + winnings + ' Gold!';
+            resultEl.style.color = "#34C759";
+        } else {
+            resultEl.innerText = 'Rolled ' + roll + '! JACKPOT! Won ' + winnings + ' Gold!';
+            resultEl.style.color = "#FFD700";
+        }
+
+        rollBtn.disabled = false;
+        loadDiceHistory();
+    }, 1500);
+}
+
+function loadGoldLeaderboard() {
+    const container = document.getElementById('gold-leaderboard-list');
+    if (!container) return;
+    container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">Loading...</p>';
+
+    if (goldLbUnsub) { goldLbUnsub(); goldLbUnsub = null; }
+
+    try {
+        goldLbUnsub = onSnapshot(collection(db, "users"), (snap) => {
+            let users = [];
+            snap.forEach(d => users.push(d.data()));
+            users.sort((a, b) => (b.gold || 0) - (a.gold || 0));
+            users = users.slice(0, 20);
+
+            let html = "";
+            users.forEach((u, idx) => {
+                const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '#' + (idx + 1)));
+                html += '<div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--glass-border);">' +
+                    '<div style="font-size: 1.2rem; font-weight: 700; width: 36px; text-align: center; color: var(--pink-primary);">' + medal + '</div>' +
+                    '<img src="' + (u.photoURL || 'https://via.placeholder.com/40') + '" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pink-primary);">' +
+                    '<div style="flex: 1; min-width: 0;">' +
+                    '<div style="font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (u.fullName || u.username || 'User') + '</div>' +
+                    '<div style="font-size: 0.75rem; color: var(--text-muted);">Lv.' + (u.level || 1) + '</div>' +
+                    '</div>' +
+                    '<div style="font-weight: 700; color: #FFD700; font-size: 0.9rem;">' + (u.gold || 0).toLocaleString() + ' <i class="fas fa-coins" style="font-size: 0.7rem;"></i></div>' +
+                    '</div>';
+            });
+            container.innerHTML = html;
+        });
+    } catch(e) {
+        container.innerHTML = '<p style="text-align: center; color: #FF3B30; padding: 20px;">Failed to load leaderboard.</p>';
+    }
+}
+
+function loadLevelLeaderboard() {
+    const container = document.getElementById('level-leaderboard-list');
+    if (!container) return;
+    container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">Loading...</p>';
+
+    if (levelLbUnsub) { levelLbUnsub(); levelLbUnsub = null; }
+
+    try {
+        levelLbUnsub = onSnapshot(collection(db, "users"), (snap) => {
+            let users = [];
+            snap.forEach(d => users.push(d.data()));
+            users.sort((a, b) => (b.level || 1) - (a.level || 1) || (b.xp || 0) - (a.xp || 0));
+            users = users.slice(0, 20);
+
+            let html = "";
+            users.forEach((u, idx) => {
+                const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '#' + (idx + 1)));
+                const badge = getUserBadgeType(u.level || 1);
+                html += '<div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--glass-border);">' +
+                    '<div style="font-size: 1.2rem; font-weight: 700; width: 36px; text-align: center; color: var(--pink-primary);">' + medal + '</div>' +
+                    '<img src="' + (u.photoURL || 'https://via.placeholder.com/40') + '" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pink-primary);">' +
+                    '<div style="flex: 1; min-width: 0;">' +
+                    '<div style="font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (u.fullName || u.username || 'User') + '</div>' +
+                    '<div style="font-size: 0.75rem; color: var(--text-muted);">' + (u.xp || 0) + '/' + calculateRequiredXpForLevel(u.level || 1) + ' XP</div>' +
+                    '</div>' +
+                    '<div style="display: flex; align-items: center; gap: 6px;">' +
+                    '<span style="font-weight: 700; color: var(--pink-light); font-size: 0.9rem;">Lv.' + (u.level || 1) + '</span>' +
+                    '<span class="badge-type ' + badge.class + '" style="font-size: 0.6rem; padding: 1px 5px;">' + badge.text + '</span>' +
+                    '</div>' +
+                    '</div>';
+            });
+            container.innerHTML = html;
+        });
+    } catch(e) {
+        container.innerHTML = '<p style="text-align: center; color: #FF3B30; padding: 20px;">Failed to load leaderboard.</p>';
+    }
+}
+
+function setupQuizGame() {
+    const closeQuizBtn = document.getElementById('close-quiz-btn');
+    const startBtn = document.getElementById('quiz-start-btn');
+    const nextBtn = document.getElementById('quiz-next-btn');
+
+    if (closeQuizBtn) {
+        closeQuizBtn.addEventListener('click', () => {
+            document.getElementById('quiz-modal').classList.add('hidden');
+            stopQuizTimer();
+            quizActive = false;
+        });
+    }
+    if (startBtn) {
+        startBtn.addEventListener('click', startQuizGame);
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener('click', nextQuizQuestion);
+    }
+    loadQuizLeaderboard();
+}
+
+function resetQuizUI() {
+    currentQuizIndex = 0;
+    quizScore = 0;
+    quizAnswered = false;
+    quizActive = false;
+    const qNum = document.getElementById('quiz-current-q');
+    if (qNum) qNum.innerText = '1';
+    const timer = document.getElementById('quiz-timer');
+    if (timer) { timer.innerText = '15s'; timer.style.color = 'var(--pink-primary)'; }
+    const qBox = document.getElementById('quiz-question-box');
+    if (qBox) qBox.innerText = 'Press Start to begin the Science Quiz!';
+    const opts = document.getElementById('quiz-options');
+    if (opts) opts.innerHTML = '';
+    const res = document.getElementById('quiz-result-area');
+    if (res) { res.innerText = ''; res.style.color = ''; }
+    const startBtn = document.getElementById('quiz-start-btn');
+    if (startBtn) { startBtn.style.display = 'inline-block'; startBtn.innerText = 'Start Quiz'; }
+    const nextBtn = document.getElementById('quiz-next-btn');
+    if (nextBtn) nextBtn.style.display = 'none';
+}
+
+function startQuizGame() {
+    if (!currentUser) { showToast('Please login first'); return; }
+    currentQuizIndex = 0;
+    quizScore = 0;
+    quizActive = true;
+    const startBtn = document.getElementById('quiz-start-btn');
+    if (startBtn) startBtn.style.display = 'none';
+    const nextBtn = document.getElementById('quiz-next-btn');
+    if (nextBtn) nextBtn.style.display = 'none';
+    showQuizQuestion();
+}
+
+function showQuizQuestion() {
+    if (currentQuizIndex >= 10) {
+        endQuizGame();
+        return;
+    }
+    quizAnswered = false;
+    quizTimeLeft = 15;
+    const q = quizQuestions[currentQuizIndex];
+    const qNum = document.getElementById('quiz-current-q');
+    if (qNum) qNum.innerText = currentQuizIndex + 1;
+    const qBox = document.getElementById('quiz-question-box');
+    if (qBox) qBox.innerText = '[' + q.category + '] ' + q.q;
+    const res = document.getElementById('quiz-result-area');
+    if (res) { res.innerText = ''; res.style.color = ''; }
+    const nextBtn = document.getElementById('quiz-next-btn');
+    if (nextBtn) nextBtn.style.display = 'none';
+
+    const optsContainer = document.getElementById('quiz-options');
+    if (optsContainer) {
+        optsContainer.innerHTML = '';
+        q.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.style.cssText = 'padding: 12px 16px; border-radius: 12px; border: 1px solid var(--glass-border); background: var(--bg-card); color: var(--text-main); font-weight: 500; cursor: pointer; transition: all 0.2s; text-align: left; font-size: 0.9rem;';
+            btn.innerText = opt;
+            btn.onmouseover = function() { if (!quizAnswered) this.style.borderColor = 'var(--pink-primary)'; };
+            btn.onmouseout = function() { if (!quizAnswered) this.style.borderColor = 'var(--glass-border)'; };
+            btn.onclick = () => checkQuizAnswer(idx, btn, q.answer);
+            optsContainer.appendChild(btn);
+        });
+    }
+
+    startQuizTimer();
+}
+
+function startQuizTimer() {
+    stopQuizTimer();
+    const timerEl = document.getElementById('quiz-timer');
+    if (timerEl) { timerEl.innerText = quizTimeLeft + 's'; timerEl.style.color = 'var(--pink-primary)'; }
+    quizTimer = setInterval(() => {
+        quizTimeLeft--;
+        if (timerEl) timerEl.innerText = quizTimeLeft + 's';
+        if (quizTimeLeft <= 5 && timerEl) timerEl.style.color = '#FF3B30';
+        if (quizTimeLeft <= 0) {
+            stopQuizTimer();
+            if (!quizAnswered) {
+                quizAnswered = true;
+                const res = document.getElementById('quiz-result-area');
+                if (res) { res.innerText = 'Time up! No points.'; res.style.color = 'var(--text-muted)'; }
+                const nextBtn = document.getElementById('quiz-next-btn');
+                if (nextBtn) nextBtn.style.display = 'inline-block';
+                highlightCorrectAnswer(quizQuestions[currentQuizIndex].answer);
+            }
+        }
+    }, 1000);
+}
+
+function stopQuizTimer() {
+    if (quizTimer) { clearInterval(quizTimer); quizTimer = null; }
+}
+
+function highlightCorrectAnswer(correctIdx) {
+    const opts = document.getElementById('quiz-options');
+    if (!opts) return;
+    for (let i = 0; i < opts.children.length; i++) {
+        if (i === correctIdx) {
+            opts.children[i].style.background = 'rgba(52, 199, 89, 0.2)';
+            opts.children[i].style.borderColor = '#34C759';
+            opts.children[i].style.color = '#34C759';
+        } else {
+            opts.children[i].style.opacity = '0.5';
+            opts.children[i].style.cursor = 'default';
+        }
+    }
+}
+
+async function checkQuizAnswer(selectedIdx, btnElement, correctIdx) {
+    if (quizAnswered || !quizActive) return;
+    quizAnswered = true;
+    stopQuizTimer();
+
+    const resultArea = document.getElementById('quiz-result-area');
+    const isCorrect = selectedIdx === correctIdx;
+
+    if (isCorrect) {
+        btnElement.style.background = 'rgba(52, 199, 89, 0.2)';
+        btnElement.style.borderColor = '#34C759';
+        btnElement.style.color = '#34C759';
+        if (resultArea) { resultArea.innerText = 'Correct! +50 Gold'; resultArea.style.color = '#34C759'; }
+        quizScore++;
+        try {
+            await earnGold(50, 'quiz_correct');
+            await addDoc(collection(db, "quiz_results"), {
+                userId: currentUser.uid,
+                userName: currentUser.displayName || 'User',
+                questionIndex: currentQuizIndex,
+                correct: true,
+                timestamp: new Date().getTime()
+            });
+        } catch(e) {}
+    } else {
+        btnElement.style.background = 'rgba(255, 59, 48, 0.2)';
+        btnElement.style.borderColor = '#FF3B30';
+        btnElement.style.color = '#FF3B30';
+        if (resultArea) { resultArea.innerText = 'Wrong answer!'; resultArea.style.color = '#FF3B30'; }
+        try {
+            await addDoc(collection(db, "quiz_results"), {
+                userId: currentUser.uid,
+                userName: currentUser.displayName || 'User',
+                questionIndex: currentQuizIndex,
+                correct: false,
+                timestamp: new Date().getTime()
+            });
+        } catch(e) {}
+    }
+
+    highlightCorrectAnswer(correctIdx);
+    const nextBtn = document.getElementById('quiz-next-btn');
+    if (nextBtn) nextBtn.style.display = 'inline-block';
+}
+
+function nextQuizQuestion() {
+    currentQuizIndex++;
+    showQuizQuestion();
+}
+
+function endQuizGame() {
+    quizActive = false;
+    stopQuizTimer();
+    const qBox = document.getElementById('quiz-question-box');
+    if (qBox) qBox.innerText = 'Quiz Complete! You scored ' + quizScore + '/10';
+    const opts = document.getElementById('quiz-options');
+    if (opts) opts.innerHTML = '';
+    const res = document.getElementById('quiz-result-area');
+    if (res) {
+        res.innerText = quizScore >= 7 ? 'Excellent! You earned bonus Gold!' : (quizScore >= 4 ? 'Good job!' : 'Keep practicing!');
+        res.style.color = quizScore >= 7 ? '#FFD700' : 'var(--text-muted)';
+    }
+    const nextBtn = document.getElementById('quiz-next-btn');
+    if (nextBtn) nextBtn.style.display = 'none';
+    const startBtn = document.getElementById('quiz-start-btn');
+    if (startBtn) { startBtn.style.display = 'inline-block'; startBtn.innerText = 'Play Again'; }
+
+    if (quizScore >= 7) {
+        earnGold(100, 'quiz_bonus').catch(() => {});
+    }
+}
+
+function loadQuizLeaderboard() {
+    const container = document.getElementById('quiz-leaders-list');
+    if (!container) return;
+
+    if (quizLbUnsub) { quizLbUnsub(); quizLbUnsub = null; }
+
+    try {
+        quizLbUnsub = onSnapshot(
+            query(collection(db, "quiz_results"), where("correct", "==", true)),
+            (snap) => {
+                const scores = {};
+                snap.forEach(d => {
+                    const data = d.data();
+                    if (!scores[data.userId]) {
+                        scores[data.userId] = { name: data.userName, count: 0 };
+                    }
+                    scores[data.userId].count++;
+                });
+                const sorted = Object.entries(scores).sort((a, b) => b[1].count - a[1].count).slice(0, 10);
+
+                let html = "";
+                sorted.forEach(([uid, data], idx) => {
+                    const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '#' + (idx + 1)));
+                    html += '<div style="display: flex; align-items: center; gap: 8px; padding: 6px; background: rgba(255,255,255,0.05); border-radius: 8px;">' +
+                        '<span style="font-weight: 700; color: var(--pink-primary); width: 24px;">' + medal + '</span>' +
+                        '<span style="flex: 1; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + data.name + '</span>' +
+                        '<span style="font-weight: 600; color: #34C759; font-size: 0.8rem;">' + data.count + ' correct</span>' +
+                        '</div>';
+                });
+                container.innerHTML = html || '<p style="text-align: center; color: var(--text-muted); padding: 10px;">No quiz data yet</p>';
+            }
+        );
+    } catch(e) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 10px;">Quiz leaderboard loading...</p>';
     }
 }
 

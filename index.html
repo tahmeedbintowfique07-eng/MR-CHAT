@@ -1004,7 +1004,88 @@
         }
 
         #back-to-sidebar { display: none; }
-    </style>
+    
+/* ==================== NEW: PROFILE, ECONOMY & DICE SYSTEM ==================== */
+
+/* --- Gold Sidebar Display --- */
+.sidebar-gold-display { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 700; color: #FFD700; margin-top: 4px; }
+
+/* --- Profile Frames --- */
+.profile-frame-overlay { pointer-events: none; border-radius: 50%; }
+.profile-frame-common { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: calc(100% + 16px); height: calc(100% + 16px); border: 3px solid #888; }
+.profile-frame-rare { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: calc(100% + 16px); height: calc(100% + 16px); border: 3px solid #00E6FF; box-shadow: 0 0 15px #00E6FF; animation: framePulse 2s infinite; }
+.profile-frame-epic { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: calc(100% + 20px); height: calc(100% + 20px); border: 3px solid #9D00FF; box-shadow: 0 0 20px #9D00FF, 0 0 40px rgba(157,0,255,0.3); animation: frameRotate 4s linear infinite; }
+.profile-frame-legendary { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: calc(100% + 24px); height: calc(100% + 24px); border: 3px solid #FFD700; box-shadow: 0 0 25px #FFD700, 0 0 50px rgba(255,215,0,0.5); animation: frameLegendary 2s infinite alternate; }
+
+@keyframes framePulse { 0%,100% { box-shadow: 0 0 10px #00E6FF; } 50% { box-shadow: 0 0 25px #00E6FF; } }
+@keyframes frameRotate { 0% { transform: translate(-50%,-50%) rotate(0deg); } 100% { transform: translate(-50%,-50%) rotate(360deg); } }
+@keyframes frameLegendary { 0% { box-shadow: 0 0 20px #FFD700; transform: translate(-50%,-50%) scale(1); } 100% { box-shadow: 0 0 40px #FFD700, 0 0 60px rgba(255,215,0,0.6); transform: translate(-50%,-50%) scale(1.02); } }
+
+/* --- Avatar Borders --- */
+.avatar-border-overlay { pointer-events: none; border-radius: 50%; }
+.avatar-border-common { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: calc(100% + 8px); height: calc(100% + 8px); border: 2px solid #888; }
+.avatar-border-rare { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: calc(100% + 8px); height: calc(100% + 8px); border: 2px solid #00E6FF; box-shadow: 0 0 10px #00E6FF; animation: borderGlow 2s infinite alternate; }
+.avatar-border-epic { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: calc(100% + 12px); height: calc(100% + 12px); border: 3px solid transparent; background: linear-gradient(45deg, #9D00FF, #FF007F, #00E6FF) border-box; -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: borderSpin 3s linear infinite; }
+.avatar-border-legendary { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: calc(100% + 12px); height: calc(100% + 12px); border: 3px solid #FFD700; box-shadow: 0 0 20px #FFD700, inset 0 0 20px rgba(255,215,0,0.3); animation: borderLegendary 1.5s infinite alternate; }
+
+@keyframes borderGlow { from { box-shadow: 0 0 5px #00E6FF; } to { box-shadow: 0 0 20px #00E6FF; } }
+@keyframes borderSpin { 0% { transform: translate(-50%,-50%) rotate(0deg); } 100% { transform: translate(-50%,-50%) rotate(360deg); } }
+@keyframes borderLegendary { 0% { box-shadow: 0 0 15px #FFD700; } 100% { box-shadow: 0 0 35px #FFD700, 0 0 50px rgba(255,215,0,0.5); } }
+
+/* --- Profile Themes --- */
+.profile-theme-dark { background: linear-gradient(180deg, #0B0C10 0%, #12131C 100%); }
+.profile-theme-neon { background: linear-gradient(180deg, #0B0C10 0%, #001a1a 100%); border: 1px solid #00E6FF; box-shadow: 0 0 30px rgba(0,230,255,0.2); }
+.profile-theme-blackpink { background: linear-gradient(180deg, #1a0a1a 0%, #2d1f2d 100%); border: 1px solid var(--pink-primary); }
+.profile-theme-cyberpunk { background: linear-gradient(180deg, #0f001f 0%, #1a0033 100%); border: 1px solid #9D00FF; }
+.profile-theme-ocean { background: linear-gradient(180deg, #001020 0%, #003050 100%); border: 1px solid #0077FF; }
+.profile-theme-fire { background: linear-gradient(180deg, #1a0500 0%, #331100 100%); border: 1px solid #FF4500; }
+
+/* --- Social Profile Card --- */
+.social-profile-card { position: relative; width: 100%; max-width: 480px; border-radius: 24px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 20px 60px rgba(0,0,0,0.5); transition: all 0.3s ease; }
+.profile-banner { height: 140px; background: linear-gradient(135deg, var(--pink-primary), #FF0055); position: relative; }
+.profile-avatar-wrapper { position: relative; width: 110px; height: 110px; margin: -55px auto 0; z-index: 5; }
+.profile-avatar-wrapper img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid var(--bg-sidebar); position: relative; z-index: 2; }
+#social-avatar-border { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; height: 100%; z-index: 3; }
+#social-profile-frame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; height: 100%; z-index: 4; }
+.profile-info-section { padding: 20px; text-align: center; }
+.badges-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.badge-item { font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--glass-border); display: inline-flex; align-items: center; gap: 4px; }
+.badge-verified { border-color: #00E6FF; color: #00E6FF; }
+.badge-early { border-color: #FF66B2; color: #FF66B2; }
+.badge-contributor { border-color: #FFD700; color: #FFD700; }
+.badge-premium { border-color: #9D00FF; color: #9D00FF; }
+.badge-owner { border-color: #FF007F; color: #FF007F; }
+.badge-winner { border-color: #FFA500; color: #FFA500; }
+.profile-bio-text { color: var(--text-muted); font-size: 0.9rem; margin: 10px 0; line-height: 1.5; max-height: 120px; overflow-y: auto; word-break: break-word; }
+.profile-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
+.stat-box { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.stat-box span { font-size: 1.1rem; font-weight: 700; color: var(--pink-primary); }
+.stat-box label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.gold-balance-display { font-size: 1.2rem; font-weight: 700; color: #FFD700; margin: 10px 0; display: flex; align-items: center; gap: 8px; justify-content: center; }
+.account-meta { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 15px; }
+.profile-actions-row { display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap; }
+
+/* --- Dice Game --- */
+.dice-game-card { background: var(--bg-sidebar); border: 1px solid var(--glass-border); border-radius: 24px; padding: 30px; width: 100%; max-width: 400px; position: relative; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.gold-display-bar { font-size: 1.1rem; font-weight: 600; color: #FFD700; margin-bottom: 15px; padding: 10px; background: rgba(255,215,0,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.bet-selection { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+.bet-btn { padding: 8px 16px; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--bg-card); color: var(--text-main); font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; }
+.bet-btn:hover, .bet-btn.selected { border-color: var(--pink-primary); background: rgba(255,0,127,0.1); color: var(--pink-primary); box-shadow: 0 0 10px rgba(255,0,127,0.2); }
+.dice-stage { display: flex; justify-content: center; margin: 20px 0; perspective: 800px; }
+.dice { width: 80px; height: 80px; background: var(--bg-card); border-radius: 16px; border: 2px solid var(--pink-primary); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 700; color: var(--pink-primary); box-shadow: 0 0 25px rgba(255,0,127,0.3); transition: transform 0.1s; position: relative; }
+.dice.rolling { animation: diceRoll 0.6s linear infinite; }
+@keyframes diceRoll { 0% { transform: rotateX(0) rotateY(0); } 25% { transform: rotateX(90deg) rotateY(90deg); } 50% { transform: rotateX(180deg) rotateY(180deg); } 75% { transform: rotateX(270deg) rotateY(270deg); } 100% { transform: rotateX(360deg) rotateY(360deg); } }
+.dice-result { min-height: 24px; font-weight: 600; margin: 10px 0; font-size: 1rem; }
+.dice-history { max-height: 150px; overflow-y: auto; margin-top: 15px; font-size: 0.8rem; color: var(--text-muted); border-top: 1px solid var(--glass-border); padding-top: 10px; }
+.dice-history-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.dice-history-item:last-child { border-bottom: none; }
+
+/* --- Profile Edit Form Enhancements --- */
+.input-group select, .input-group textarea { width: 100%; padding: 15px 15px 15px 45px; background: var(--bg-card); border: 1px solid transparent; border-radius: 12px; color: var(--text-main); font-size: 0.95rem; transition: all 0.3s; appearance: none; font-family: 'Inter', sans-serif; }
+.input-group select:focus, .input-group textarea:focus { border-color: var(--pink-primary); outline: none; box-shadow: 0 0 10px rgba(255, 0, 127, 0.2); }
+.input-group textarea { min-height: 80px; resize: vertical; padding-top: 12px; }
+
+</style>
 </head>
 <body>
 
@@ -1055,6 +1136,7 @@
                             <div id="current-user-xp-bar" class="xp-progress-bar"></div>
                         </div>
                         <span id="current-user-xp-text" style="font-size:0.65rem; color:var(--text-muted); margin-top:2px;">0/100 XP</span>
+                        <div class="sidebar-gold-display"><i class="fas fa-coins" style="font-size: 0.8rem;"></i> <span id="sidebar-gold-display">0</span></div>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -1225,6 +1307,55 @@
                     <i class="fas fa-briefcase"></i>
                     <input type="text" id="profile-profession" placeholder="Profession" required>
                 </div>
+                <div class="input-group">
+                    <i class="fas fa-align-left"></i>
+                    <textarea id="profile-bio" placeholder="Bio (max 200 characters)" maxlength="200"></textarea>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-border-all"></i>
+                    <select id="profile-frame">
+                        <option value="none">No Frame</option>
+                        <option value="common">Common Frame</option>
+                        <option value="rare">Rare Frame</option>
+                        <option value="epic">Epic Frame</option>
+                        <option value="legendary">Legendary Frame</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-circle"></i>
+                    <select id="profile-border">
+                        <option value="none">No Border</option>
+                        <option value="common">Common Border</option>
+                        <option value="rare">Rare Border</option>
+                        <option value="epic">Epic Border</option>
+                        <option value="legendary">Legendary Border</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-palette"></i>
+                    <select id="profile-theme">
+                        <option value="blackpink">Black Pink (Default)</option>
+                        <option value="dark">Dark</option>
+                        <option value="neon">Neon</option>
+                        <option value="cyberpunk">Cyberpunk</option>
+                        <option value="ocean">Ocean</option>
+                        <option value="fire">Fire</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-music"></i>
+                    <input type="url" id="profile-music" placeholder="Profile Music URL (MP3)">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-font"></i>
+                    <select id="profile-font">
+                        <option value="default">Default (Inter)</option>
+                        <option value="elegant">Elegant (Georgia)</option>
+                        <option value="bold">Bold (Impact)</option>
+                        <option value="monospace">Monospace (Courier)</option>
+                        <option value="cursive">Cursive (Brush Script)</option>
+                    </select>
+                </div>
                 <button type="submit" class="main-btn" id="profile-save-btn">Save Profile</button>
             </form>
         </div>
@@ -1271,7 +1402,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, query, where, or, orderBy, onSnapshot, addDoc, getDocs, updateDoc, deleteDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, collection, query, where, or, orderBy, onSnapshot, addDoc, getDocs, updateDoc, deleteDoc, getDoc, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCr9Bfn4Ep-qw9JFkguyak00dsN90GSgRY",
@@ -1412,6 +1543,13 @@
         let contextSelectedMsgData = null;
         let currentReplyContextPayload = null;
         let currentEditModeActive = false;
+
+let callStartTime = null;
+let goldEarnInterval = null;
+let selectedDiceBet = 100;
+let currentProfileMusic = null;
+let joinedRoomsThisSession = new Set();
+
 
         window.activeAudioNodes = new Map();
 
@@ -1684,6 +1822,10 @@
                 authContainer.classList.add("hidden");
                 appContainer.classList.remove("hidden");
 
+                await initializeUserStats(user);
+                await checkDailyLogin();
+                startGoldEarningTimer();
+
                 onSnapshot(doc(db, "users", user.uid), (docSnap) => {
                     if (docSnap.exists()) {
                         const uData = docSnap.data();
@@ -1692,6 +1834,8 @@
                         document.getElementById("current-user-avatar").src = uData.photoURL || user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.displayName}`;
 
                         updateSidebarGamificationUI(uData);
+                        updateSidebarGoldDisplay(uData.gold || 0);
+                        checkAndAwardBadges(uData);
 
                         if(activeTab === "rooms") {
                             toggleAdminPanelDisplay();
@@ -1943,6 +2087,8 @@
             chatUserStatus.innerText = "Public Broadcast Module";
             chatUserStatus.style.color = "var(--text-muted)";
 
+            trackRoomJoin(roomId);
+
             document.getElementById("chat-user-level").innerText = "";
             document.getElementById("chat-user-badge").className = "badge-type hidden";
 
@@ -2101,6 +2247,11 @@
                 });
                 showToast("Link pipeline online!");
                 rewardXpToCurrentUser(30);
+                incrementStat('friendsCount');
+                earnGold(50, 'friend_invite');
+                // Update sender's friend count too
+                const senderRef = doc(db, "users", senderUid);
+                updateDoc(senderRef, { friendsCount: increment(1) }).catch(()=>{});
                 switchTab("chats");
             } catch(e) { alert(e.message); }
         };
@@ -2682,6 +2833,8 @@
             }
 
             rewardXpToCurrentUser(10);
+            incrementStat('messagesSent');
+            earnGold(10, 'message');
 
             if (isGroupRoomMode) {
                 try {
@@ -2941,6 +3094,12 @@
                 profileAge.disabled = true;
                 profileFrom.disabled = true;
                 profileProfession.disabled = true;
+                document.getElementById('profile-bio').disabled = true;
+                document.getElementById('profile-frame').disabled = true;
+                document.getElementById('profile-border').disabled = true;
+                document.getElementById('profile-theme').disabled = true;
+                document.getElementById('profile-music').disabled = true;
+                document.getElementById('profile-font').disabled = true;
             } else {
                 modalTitle.innerText = "Edit Profile";
                 modalSubtitle.innerText = "Update your network identity and details";
@@ -2950,6 +3109,12 @@
                 profileAge.disabled = false;
                 profileFrom.disabled = false;
                 profileProfession.disabled = false;
+                document.getElementById('profile-bio').disabled = false;
+                document.getElementById('profile-frame').disabled = false;
+                document.getElementById('profile-border').disabled = false;
+                document.getElementById('profile-theme').disabled = false;
+                document.getElementById('profile-music').disabled = false;
+                document.getElementById('profile-font').disabled = false;
             }
         }
 
@@ -2967,6 +3132,13 @@
                         profileFrom.value = userData.from || "";
                         profileProfession.value = userData.profession || "";
                         modalPreviewAvatar.src = userData.photoURL || currentUser.photoURL || "https://via.placeholder.com/90";
+
+                        document.getElementById('profile-bio').value = userData.bio || "";
+                        document.getElementById('profile-frame').value = userData.profileFrame || "none";
+                        document.getElementById('profile-border').value = userData.avatarBorder || "none";
+                        document.getElementById('profile-theme').value = userData.profileTheme || "blackpink";
+                        document.getElementById('profile-music').value = userData.profileMusic || "";
+                        document.getElementById('profile-font').value = userData.fontStyle || "default";
                     }
                 } catch (e) {}
             });
@@ -2975,19 +3147,7 @@
         if (targetUserProfileTrigger) {
             targetUserProfileTrigger.addEventListener("click", async () => {
                 if (!activeChatUserId || isGroupRoomMode) return;
-                setProfileModalMode(true);
-                profileModal.classList.remove("hidden");
-                try {
-                    const targetDocSnap = await getDoc(doc(db, "users", activeChatUserId));
-                    if (targetDocSnap.exists()) {
-                        const targetData = targetDocSnap.data();
-                        profileName.value = targetData.fullName || targetData.username || "Anonymous";
-                        profileAge.value = targetData.age || "Not Specified";
-                        profileFrom.value = targetData.from || "Not Specified";
-                        profileProfession.value = targetData.profession || "Not Specified";
-                        modalPreviewAvatar.src = targetData.photoURL || "https://via.placeholder.com/90";
-                    }
-                } catch (e) {}
+                openSocialProfile(activeChatUserId);
             });
         }
 
@@ -3056,7 +3216,13 @@
                         from: profileFrom.value.trim(),
                         profession: profileProfession.value.trim(),
                         photoURL: downloadURL,
-                        updatedAt: new Date().getTime()
+                        updatedAt: new Date().getTime(),
+                        bio: document.getElementById('profile-bio').value.trim().substring(0, 200),
+                        profileFrame: document.getElementById('profile-frame').value,
+                        avatarBorder: document.getElementById('profile-border').value,
+                        profileTheme: document.getElementById('profile-theme').value,
+                        profileMusic: document.getElementById('profile-music').value.trim(),
+                        fontStyle: document.getElementById('profile-font').value
                     }, { merge: true }); // merge:true preserves username and other fields
 
                     showToast("Profile pipeline updated!");
@@ -3084,6 +3250,16 @@
                 if (!gifPanel.classList.contains("hidden")) {
                     gifPanel.classList.add("hidden");
                 }
+                const socialModal = document.getElementById('social-profile-modal');
+                if (socialModal && !socialModal.classList.contains("hidden")) {
+                    socialModal.classList.add("hidden");
+                    const player = document.getElementById('profile-music-player');
+                    if (player) { player.pause(); player.currentTime = 0; }
+                }
+                const diceModal = document.getElementById('dice-game-modal');
+                if (diceModal && !diceModal.classList.contains("hidden")) {
+                    diceModal.classList.add("hidden");
+                }
             }
         });
 
@@ -3100,7 +3276,387 @@
             return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
         }
 
-        /* ==================== CALLING SYSTEM WEBRTC + FIREBASE ==================== */
+        
+// ==================== NEW: ECONOMY, PROFILE & DICE SYSTEM ====================
+
+function updateSidebarGoldDisplay(gold) {
+    const el = document.getElementById('sidebar-gold-display');
+    if (el) el.innerText = (gold || 0).toLocaleString();
+}
+
+async function initializeUserStats(user) {
+    const userRef = doc(db, "users", user.uid);
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const updates = {};
+    const now = new Date().getTime();
+
+    if (data.accountCreated === undefined) updates.accountCreated = now;
+    if (data.gold === undefined) updates.gold = 0;
+    if (data.dailyLoginStreak === undefined) updates.dailyLoginStreak = 0;
+    if (data.lastLoginDate === undefined) updates.lastLoginDate = 0;
+    if (data.messagesSent === undefined) updates.messagesSent = 0;
+    if (data.friendsCount === undefined) updates.friendsCount = 0;
+    if (data.roomsJoined === undefined) updates.roomsJoined = 0;
+    if (data.voiceCallHours === undefined) updates.voiceCallHours = 0;
+    if (data.bio === undefined) updates.bio = "";
+    if (data.profileFrame === undefined) updates.profileFrame = "none";
+    if (data.avatarBorder === undefined) updates.avatarBorder = "none";
+    if (data.profileTheme === undefined) updates.profileTheme = "blackpink";
+    if (data.profileMusic === undefined) updates.profileMusic = "";
+    if (data.fontStyle === undefined) updates.fontStyle = "default";
+    if (data.badges === undefined) updates.badges = [];
+    if (data.isVerified === undefined) updates.isVerified = false;
+    if (data.isPremium === undefined) updates.isPremium = false;
+    if (data.isEarlyUser === undefined) updates.isEarlyUser = true;
+    if (data.isTopContributor === undefined) updates.isTopContributor = false;
+    if (data.isRoomOwner === undefined) updates.isRoomOwner = false;
+    if (data.isEventWinner === undefined) updates.isEventWinner = false;
+    if (data.joinedRooms === undefined) updates.joinedRooms = [];
+
+    if (Object.keys(updates).length > 0) {
+        await updateDoc(userRef, updates);
+    }
+}
+
+async function earnGold(amount, reason) {
+    if (!currentUser) return;
+    const userRef = doc(db, "users", currentUser.uid);
+    try {
+        await updateDoc(userRef, { gold: increment(amount) });
+        const snap = await getDoc(userRef);
+        updateSidebarGoldDisplay(snap.data().gold || 0);
+    } catch(e) { console.error("Gold earn error:", e); }
+}
+
+async function checkDailyLogin() {
+    if (!currentUser) return;
+    const userRef = doc(db, "users", currentUser.uid);
+    const snap = await getDoc(userRef);
+    const data = snap.data();
+    const now = new Date();
+    const lastLogin = data.lastLoginDate ? new Date(data.lastLoginDate) : null;
+
+    const isSameDay = (d1, d2) => d1 && d2 && d1.getDate() === d2.getDate() && d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear();
+    const isConsecutive = (last, now) => {
+        if (!last) return false;
+        const diff = now - last;
+        return diff > 0 && diff <= 2 * 24 * 60 * 60 * 1000;
+    };
+
+    if (!lastLogin || !isSameDay(now, lastLogin)) {
+        const streak = isConsecutive(lastLogin, now) ? (data.dailyLoginStreak || 0) + 1 : 1;
+        const baseReward = 100;
+        const streakBonus = Math.min((streak - 1) * 50, 500);
+        const totalReward = baseReward + streakBonus;
+
+        await updateDoc(userRef, {
+            lastLoginDate: now.getTime(),
+            dailyLoginStreak: streak,
+            gold: increment(totalReward)
+        });
+        showToast(`🎁 Daily Login: +${totalReward} Gold! (Streak: ${streak} days)`);
+        updateSidebarGoldDisplay((data.gold || 0) + totalReward);
+    }
+}
+
+function startGoldEarningTimer() {
+    if (goldEarnInterval) clearInterval(goldEarnInterval);
+    goldEarnInterval = setInterval(() => {
+        if (currentUser && document.visibilityState === 'visible') {
+            earnGold(100, 'active_usage');
+        }
+    }, 5 * 60 * 1000);
+}
+
+async function incrementStat(field, amount = 1) {
+    if (!currentUser) return;
+    const userRef = doc(db, "users", currentUser.uid);
+    try {
+        await updateDoc(userRef, { [field]: increment(amount) });
+    } catch(e) {}
+}
+
+function checkAndAwardBadges(userData) {
+    const badges = new Set(userData.badges || []);
+    const newBadges = [];
+    const toCheck = [
+        { key: 'verified', flag: 'isVerified' },
+        { key: 'early', flag: 'isEarlyUser' },
+        { key: 'contributor', flag: 'isTopContributor' },
+        { key: 'premium', flag: 'isPremium' },
+        { key: 'owner', flag: 'isRoomOwner' },
+        { key: 'winner', flag: 'isEventWinner' }
+    ];
+
+    toCheck.forEach(item => {
+        if (userData[item.flag] && !badges.has(item.key)) {
+            badges.add(item.key);
+            newBadges.push(item.key);
+        }
+    });
+
+    if ((userData.messagesSent || 0) >= 1000 && !badges.has('chatter')) { badges.add('chatter'); newBadges.push('chatter'); }
+    if ((userData.friendsCount || 0) >= 10 && !badges.has('social')) { badges.add('social'); newBadges.push('social'); }
+    if ((userData.gold || 0) >= 10000 && !badges.has('rich')) { badges.add('rich'); newBadges.push('rich'); }
+
+    if (newBadges.length > 0 && currentUser) {
+        updateDoc(doc(db, "users", currentUser.uid), { badges: Array.from(badges) });
+        showToast(`🏅 New Badge: ${newBadges.map(b => b.charAt(0).toUpperCase() + b.slice(1)).join(', ')}`);
+    }
+    return Array.from(badges);
+}
+
+async function trackRoomJoin(roomId) {
+    if (!currentUser || joinedRoomsThisSession.has(roomId)) return;
+    joinedRoomsThisSession.add(roomId);
+    const userRef = doc(db, "users", currentUser.uid);
+    const snap = await getDoc(userRef);
+    const data = snap.data();
+    const joined = data.joinedRooms || [];
+    if (!joined.includes(roomId)) {
+        await updateDoc(userRef, { joinedRooms: [...joined, roomId], roomsJoined: increment(1) });
+        earnGold(20, 'room_join');
+    }
+}
+
+function getFontFamily(style) {
+    switch(style) {
+        case 'elegant': return "'Georgia', serif";
+        case 'bold': return "'Impact', sans-serif";
+        case 'monospace': return "'Courier New', monospace";
+        case 'cursive': return "'Brush Script MT', cursive";
+        default: return "'Inter', sans-serif";
+    }
+}
+
+function renderBadges(badges, userData) {
+    const container = document.getElementById('social-profile-badges');
+    container.innerHTML = "";
+    const badgeMap = {
+        'verified': { icon: 'fa-check-circle', text: 'Verified', class: 'badge-verified' },
+        'early': { icon: 'fa-rocket', text: 'Early User', class: 'badge-early' },
+        'contributor': { icon: 'fa-medal', text: 'Top Contributor', class: 'badge-contributor' },
+        'premium': { icon: 'fa-gem', text: 'Premium', class: 'badge-premium' },
+        'owner': { icon: 'fa-crown', text: 'Room Owner', class: 'badge-owner' },
+        'winner': { icon: 'fa-trophy', text: 'Event Winner', class: 'badge-winner' },
+        'chatter': { icon: 'fa-comments', text: 'Chatter', class: 'badge-verified' },
+        'social': { icon: 'fa-users', text: 'Socialite', class: 'badge-early' },
+        'rich': { icon: 'fa-coins', text: 'Gold Hoarder', class: 'badge-premium' }
+    };
+    const implied = [];
+    if (userData.isVerified && !badges.includes('verified')) implied.push('verified');
+    if (userData.isEarlyUser && !badges.includes('early')) implied.push('early');
+    if (userData.isTopContributor && !badges.includes('contributor')) implied.push('contributor');
+    if (userData.isPremium && !badges.includes('premium')) implied.push('premium');
+    if (userData.isRoomOwner && !badges.includes('owner')) implied.push('owner');
+    if (userData.isEventWinner && !badges.includes('winner')) implied.push('winner');
+    const allBadges = [...new Set([...badges, ...implied])];
+
+    allBadges.forEach(b => {
+        const info = badgeMap[b];
+        if (!info) return;
+        container.innerHTML += `<div class="badge-item ${info.class}"><i class="fas ${info.icon}"></i> ${info.text}</div>`;
+    });
+    if (allBadges.length === 0) container.innerHTML = '<span style="font-size:0.8rem; color:var(--text-muted);">No badges yet</span>';
+}
+
+async function openSocialProfile(targetUid = null) {
+    const uid = targetUid || (currentUser ? currentUser.uid : null);
+    if (!uid) return;
+    const isOwnProfile = uid === (currentUser ? currentUser.uid : null);
+    const snap = await getDoc(doc(db, "users", uid));
+    if (!snap.exists()) return;
+    const data = snap.data();
+
+    const modal = document.getElementById('social-profile-modal');
+    const card = document.getElementById('social-profile-card');
+    card.className = `social-profile-card profile-theme-${data.profileTheme || 'blackpink'}`;
+    card.style.fontFamily = getFontFamily(data.fontStyle);
+
+    document.getElementById('social-profile-avatar').src = data.photoURL || 'https://via.placeholder.com/110';
+
+    const frameOverlay = document.getElementById('social-profile-frame');
+    const borderOverlay = document.getElementById('social-avatar-border');
+    frameOverlay.className = `profile-frame-overlay ${data.profileFrame !== 'none' && data.profileFrame ? 'profile-frame-' + data.profileFrame : ''}`;
+    borderOverlay.className = `avatar-border-overlay ${data.avatarBorder !== 'none' && data.avatarBorder ? 'avatar-border-' + data.avatarBorder : ''}`;
+
+    document.getElementById('social-profile-name').innerText = data.fullName || data.username || 'User';
+    renderBadges(data.badges || [], data);
+    document.getElementById('social-profile-bio').innerText = data.bio || "No bio yet.";
+
+    document.getElementById('stat-friends').innerText = data.friendsCount || 0;
+    document.getElementById('stat-rooms').innerText = data.roomsJoined || 0;
+    document.getElementById('stat-messages').innerText = data.messagesSent || 0;
+    document.getElementById('stat-calls').innerText = (data.voiceCallHours || 0).toFixed(1);
+
+    document.getElementById('social-profile-gold').innerText = (data.gold || 0).toLocaleString();
+
+    const created = data.accountCreated ? new Date(data.accountCreated).toLocaleDateString() : 'Unknown';
+    document.getElementById('social-profile-created').innerText = `Joined ${created}`;
+
+    const musicContainer = document.getElementById('profile-music-container');
+    const musicPlayer = document.getElementById('profile-music-player');
+    const musicToggle = document.getElementById('profile-music-toggle');
+    if (data.profileMusic && data.profileMusic.trim()) {
+        musicContainer.classList.remove('hidden');
+        musicPlayer.src = data.profileMusic;
+        musicToggle.innerHTML = '<i class="fas fa-music"></i> Play Profile Music';
+        musicToggle.onclick = () => {
+            if (musicPlayer.paused) {
+                musicPlayer.play().catch(()=>{});
+                musicToggle.innerHTML = '<i class="fas fa-pause"></i> Pause Music';
+            } else {
+                musicPlayer.pause();
+                musicToggle.innerHTML = '<i class="fas fa-music"></i> Play Profile Music';
+            }
+        };
+    } else {
+        musicContainer.classList.add('hidden');
+        musicPlayer.pause();
+        musicPlayer.src = "";
+    }
+
+    const editBtn = document.getElementById('edit-profile-from-view');
+    const diceBtn = document.getElementById('open-dice-game-btn');
+    editBtn.style.display = isOwnProfile ? 'inline-flex' : 'none';
+    diceBtn.style.display = isOwnProfile ? 'inline-flex' : 'none';
+
+    editBtn.onclick = () => {
+        modal.classList.add('hidden');
+        const player = document.getElementById('profile-music-player');
+        if (player) player.pause();
+        openProfileBtn.click();
+    };
+    diceBtn.onclick = () => {
+        modal.classList.add('hidden');
+        const player = document.getElementById('profile-music-player');
+        if (player) player.pause();
+        document.getElementById('dice-game-modal').classList.remove('hidden');
+        loadDiceGame();
+    };
+
+    document.getElementById('close-social-profile').onclick = () => {
+        modal.classList.add('hidden');
+        const player = document.getElementById('profile-music-player');
+        if (player) { player.pause(); player.currentTime = 0; }
+    };
+
+    modal.classList.remove('hidden');
+}
+
+// Dice Game
+async function loadDiceGame() {
+    if (!currentUser) return;
+    const snap = await getDoc(doc(db, "users", currentUser.uid));
+    const data = snap.data();
+    document.getElementById('dice-gold-balance').innerText = (data.gold || 0).toLocaleString();
+    loadDiceHistory();
+}
+
+async function loadDiceHistory() {
+    const q = query(collection(db, "dice_games"), where("userId", "==", currentUser.uid), orderBy("timestamp", "desc"));
+    const snap = await getDocs(q);
+    const container = document.getElementById('dice-history');
+    container.innerHTML = "";
+    if (snap.empty) {
+        container.innerHTML = "<p style='text-align:center; opacity:0.5; padding: 10px;'>No games yet</p>";
+        return;
+    }
+    snap.forEach(d => {
+        const data = d.data();
+        const net = data.winnings - data.bet;
+        const color = net > 0 ? '#34C759' : (net < 0 ? '#FF3B30' : 'var(--text-muted)');
+        const sign = net > 0 ? '+' : '';
+        container.innerHTML += `<div class="dice-history-item"><span>Bet ${data.bet} | Roll ${data.roll}</span><span style="color:${color}; font-weight:600;">${sign}${net}</span></div>`;
+    });
+}
+
+async function playDiceGame() {
+    if (!currentUser) return;
+    const bet = selectedDiceBet;
+    const userRef = doc(db, "users", currentUser.uid);
+    const snap = await getDoc(userRef);
+    const gold = snap.data().gold || 0;
+
+    if (gold < bet) {
+        showToast("💰 Not enough Gold!");
+        return;
+    }
+
+    const diceEl = document.getElementById('dice-1');
+    const resultEl = document.getElementById('dice-result');
+    const rollBtn = document.getElementById('roll-dice-btn');
+
+    rollBtn.disabled = true;
+    diceEl.classList.add('rolling');
+    resultEl.innerText = "Rolling...";
+    resultEl.style.color = "";
+
+    await updateDoc(userRef, { gold: increment(-bet) });
+    document.getElementById('dice-gold-balance').innerText = (gold - bet).toLocaleString();
+
+    setTimeout(async () => {
+        const roll = Math.floor(Math.random() * 6) + 1;
+        diceEl.classList.remove('rolling');
+        diceEl.querySelector('.dice-face').innerText = roll;
+
+        let winnings = 0;
+        if (roll <= 2) winnings = 0;
+        else if (roll <= 4) winnings = bet;
+        else if (roll === 5) winnings = bet * 2;
+        else winnings = bet * 3;
+
+        const netProfit = winnings - bet;
+
+        if (winnings > 0) {
+            await updateDoc(userRef, { gold: increment(winnings) });
+            document.getElementById('dice-gold-balance').innerText = (gold - bet + winnings).toLocaleString();
+        }
+
+        await addDoc(collection(db, "dice_games"), {
+            userId: currentUser.uid,
+            bet: bet,
+            roll: roll,
+            winnings: winnings,
+            timestamp: new Date().getTime()
+        });
+
+        if (roll <= 2) {
+            resultEl.innerText = `❌ Rolled ${roll}. You lost ${bet} Gold.`;
+            resultEl.style.color = "#FF3B30";
+        } else if (roll <= 4) {
+            resultEl.innerText = `😐 Rolled ${roll}. Break even.`;
+            resultEl.style.color = "var(--text-muted)";
+        } else if (roll === 5) {
+            resultEl.innerText = `🎉 Rolled ${roll}! Won ${winnings} Gold!`;
+            resultEl.style.color = "#34C759";
+        } else {
+            resultEl.innerText = `🔥 Rolled ${roll}! JACKPOT! Won ${winnings} Gold!`;
+            resultEl.style.color = "#FFD700";
+        }
+
+        rollBtn.disabled = false;
+        loadDiceHistory();
+    }, 1500);
+}
+
+// Dice Game Event Listeners (setup once)
+document.querySelectorAll('.bet-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedDiceBet = parseInt(btn.dataset.bet);
+    });
+});
+document.getElementById('roll-dice-btn').addEventListener('click', playDiceGame);
+document.getElementById('close-dice-btn').addEventListener('click', () => {
+    document.getElementById('dice-game-modal').classList.add('hidden');
+});
+
+
+/* ==================== CALLING SYSTEM WEBRTC + FIREBASE ==================== */
 
         // Call button handlers
         voiceCallBtn.addEventListener("click", () => {
@@ -3308,6 +3864,14 @@
                 clearInterval(callTimerInterval);
                 callTimerInterval = null;
             }
+            if (callStartTime) {
+                const durationMs = Date.now() - callStartTime;
+                const hours = durationMs / (1000 * 60 * 60);
+                if (hours > 0.005) {
+                    incrementStat('voiceCallHours', parseFloat(hours.toFixed(3)));
+                }
+                callStartTime = null;
+            }
             if (peerConnection) {
                 peerConnection.onicecandidate = null;
                 peerConnection.ontrack = null;
@@ -3455,6 +4019,7 @@
                 // Connected - start timer and wave animation
                 activeCallTimer.classList.remove('hidden');
                 if (callStatusEl) callStatusEl.classList.add('hidden');
+                callStartTime = Date.now(); // NEW: Track call start for stats
 
                 const waveSpans = document.querySelectorAll('.call-wave span');
                 waveSpans.forEach(span => span.style.animationPlayState = 'running');
@@ -3490,5 +4055,72 @@
         }
 
     </script>
+
+<!-- ==================== NEW: SOCIAL PROFILE MODAL ==================== -->
+<div id="social-profile-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; z-index: 10001; padding: 20px; overflow-y: auto; backdrop-filter: blur(10px);">
+    <div class="social-profile-card" id="social-profile-card">
+        <div class="profile-banner"></div>
+        <div class="profile-avatar-wrapper">
+            <img id="social-profile-avatar" src="https://via.placeholder.com/110" class="avatar" alt="Profile">
+            <div class="avatar-border-overlay" id="social-avatar-border"></div>
+            <div class="profile-frame-overlay" id="social-profile-frame"></div>
+        </div>
+        <div class="profile-info-section">
+            <h2 id="social-profile-name" style="font-size: 1.4rem; font-weight: 700;">User</h2>
+            <div id="social-profile-badges" class="badges-row"></div>
+            <p id="social-profile-bio" class="profile-bio-text">No bio yet.</p>
+            <div class="profile-stats-grid">
+                <div class="stat-box"><span id="stat-friends">0</span><label>Friends</label></div>
+                <div class="stat-box"><span id="stat-rooms">0</span><label>Rooms</label></div>
+                <div class="stat-box"><span id="stat-messages">0</span><label>Messages</label></div>
+                <div class="stat-box"><span id="stat-calls">0</span><label>Call Hours</label></div>
+            </div>
+            <div class="gold-balance-display">
+                <i class="fas fa-coins"></i>
+                <span id="social-profile-gold">0</span> Gold
+            </div>
+            <div class="account-meta">
+                <span id="social-profile-created">Joined recently</span>
+            </div>
+            <div id="profile-music-container" class="hidden" style="margin: 10px 0;">
+                <audio id="profile-music-player" loop></audio>
+                <button id="profile-music-toggle" class="action-btn-sm btn-pink"><i class="fas fa-music"></i> Play Profile Music</button>
+            </div>
+            <div class="profile-actions-row">
+                <button id="edit-profile-from-view" class="action-btn-sm btn-pink"><i class="fas fa-pen"></i> Edit Profile</button>
+                <button id="open-dice-game-btn" class="action-btn-sm btn-pink"><i class="fas fa-dice"></i> Dice Game</button>
+            </div>
+        </div>
+        <button id="close-social-profile" class="icon-btn" style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%;"><i class="fas fa-times"></i></button>
+    </div>
+</div>
+
+<!-- ==================== NEW: DICE GAME MODAL ==================== -->
+<div id="dice-game-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; z-index: 10002; padding: 20px; backdrop-filter: blur(10px);">
+    <div class="dice-game-card">
+        <h2 style="margin-bottom: 5px;"><i class="fas fa-dice" style="color: var(--pink-primary);"></i> Dice Arena</h2>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Test your luck. Win big.</p>
+        <div class="gold-display-bar">
+            <i class="fas fa-coins"></i>
+            <span id="dice-gold-balance">0</span> Gold
+        </div>
+        <div class="bet-selection">
+            <button class="bet-btn selected" data-bet="100">100</button>
+            <button class="bet-btn" data-bet="500">500</button>
+            <button class="bet-btn" data-bet="1000">1K</button>
+            <button class="bet-btn" data-bet="5000">5K</button>
+        </div>
+        <div class="dice-stage">
+            <div class="dice" id="dice-1"><div class="dice-face">?</div></div>
+        </div>
+        <div class="dice-result" id="dice-result" style="color: var(--text-muted);">Select your bet and roll!</div>
+        <button id="roll-dice-btn" class="main-btn" style="margin-top: 15px; max-width: 200px; margin-left: auto; margin-right: auto;">ROLL DICE</button>
+        <div class="dice-history" id="dice-history">
+            <p style="text-align:center; opacity:0.5; padding: 10px;">No games yet</p>
+        </div>
+        <button id="close-dice-btn" class="icon-btn" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%;"><i class="fas fa-times"></i></button>
+    </div>
+</div>
+
 </body>
 </html>

@@ -313,6 +313,38 @@
             border-bottom-color: var(--pink-primary);
         }
 
+        /* Admin Creation Controls Form Section Wrapper */
+        .admin-room-control-panel {
+            padding: 15px 20px;
+            background: rgba(255, 0, 127, 0.05);
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .admin-room-control-panel h4 {
+            font-size: 0.85rem;
+            color: var(--pink-light);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .admin-room-form-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .admin-room-form-grid input {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.85rem;
+        }
+        .admin-room-form-grid input:focus {
+            outline: none;
+            border-color: var(--pink-primary);
+        }
+
         .user-list {
             list-style: none;
             overflow-y: auto;
@@ -747,8 +779,18 @@
 
             <div class="tabs-container">
                 <button id="tab-chats" class="tab-link active">Chats</button>
+                <button id="tab-rooms" class="tab-link">Rooms</button>
                 <button id="tab-friends" class="tab-link">All Users</button>
                 <button id="tab-requests" class="tab-link">Requests <span id="req-badge" style="background:var(--pink-primary); color:white; border-radius:50%; padding:2px 6px; font-size:10px; display:none;">0</span></button>
+            </div>
+
+            <div id="admin-room-creation-panel" class="admin-room-control-panel hidden">
+                <h4>Create Premium Lounge (Admin)</h4>
+                <form id="admin-create-room-form" class="admin-room-form-grid">
+                    <input type="text" id="admin-new-room-name" placeholder="Enter room name..." required>
+                    <input type="text" id="admin-new-room-desc" placeholder="Enter short description..." required>
+                    <button type="submit" class="action-btn-sm btn-pink" style="width:100%; padding:8px;">Deploy New Room</button>
+                </form>
             </div>
 
             <ul id="active-chats-list" class="user-list"></ul>
@@ -881,6 +923,9 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // Notification Audio Context setup
+        const alertAudio = new Audio("https://assets.mixkit.co/active_storage/sfx/2357/2357-84.wav");
+
         // UI Target Pointers
         const authContainer = document.getElementById("auth-container");
         const appContainer = document.getElementById("app-container");
@@ -905,9 +950,16 @@
         const backToSidebar = document.getElementById("back-to-sidebar");
         const logoutBtn = document.getElementById("logout-btn");
         const tabChats = document.getElementById("tab-chats");
+        const tabRooms = document.getElementById("tab-rooms");
         const tabFriends = document.getElementById("tab-friends");
         const tabRequests = document.getElementById("tab-requests");
         const reqBadge = document.getElementById("req-badge");
+
+        // Admin Room Control Pointers
+        const adminRoomCreationPanel = document.getElementById("admin-room-creation-panel");
+        const adminCreateRoomForm = document.getElementById("admin-create-room-form");
+        const adminNewRoomName = document.getElementById("admin-new-room-name");
+        const adminNewRoomDesc = document.getElementById("admin-new-room-desc");
 
         // Theme Interactive Feature Mapping Targets
         const webThemeTriggerBtn = document.getElementById("web-theme-trigger-btn");
@@ -947,7 +999,9 @@
         const targetUserProfileTrigger = document.getElementById("target-user-profile-trigger");
 
         let currentUser = null;
+        let currentUserRole = "user"; // Defaults configuration state tracker
         let activeChatUserId = null;
+        let isGroupRoomMode = false;
         let unsubscribeMessagesSub = null;
         let unsubscribeRealtimeStream = null; 
         let unsubscribeTargetUserStatus = null;
@@ -964,6 +1018,11 @@
 
         // Custom Premium Global Audio Tracking Map
         window.activeAudioNodes = new Map();
+
+        // Browser Native Notification System Request Setup
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
 
         /* ==================== GLOBAL REAL-TIME MOBILE VIEWPORT ENGINE ==================== */
         function configureDynamicViewportMatrix() {
@@ -1118,8 +1177,18 @@
                         photoURL: `https://api.dicebear.com/7.x/adventurer/svg?seed=${username}`,
                         status: "online",
                         isTypingTo: null,
+                        role: "user", // Default tier allocation setup
                         lastSeen: new Date().getTime()
                     });
+                    
+                    // Create default Public Group Room implicitly if not exists
+                    await setDoc(doc(db, "group_rooms", "global_public_lounge"), {
+                        roomId: "global_public_lounge",
+                        roomName: "Global Public Lounge",
+                        description: "Standard structural room open to everyone.",
+                        photoURL: "https://api.dicebear.com/7.x/identicon/svg?seed=global_lounge"
+                    }, {merge: true});
+
                     showToast("Account synchronized!");
                 }
             } catch (error) { alert("Authentication block: " + error.message); }
@@ -1134,14 +1203,21 @@
                 onSnapshot(doc(db, "users", user.uid), (docSnap) => {
                     if (docSnap.exists()) {
                         const uData = docSnap.data();
+                        currentUserRole = uData.role || "user"; // Fetch user authority tier matrix
                         document.getElementById("current-user-name").innerText = uData.fullName || uData.username || user.displayName || "User";
                         document.getElementById("current-user-avatar").src = uData.photoURL || user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.displayName}`;
+                        
+                        // Dynamically refresh panel displays if active tab is rooms
+                        if(activeTab === "rooms") {
+                            toggleAdminPanelDisplay();
+                        }
                     }
                 });
 
                 try { await updateDoc(doc(db, "users", user.uid), { status: "online", lastSeen: new Date().getTime() }); } catch(e) {}
                 switchTab("chats");
                 listenRequestBadge();
+                listenGlobalIncomingMessagesForNotification();
             } else {
                 currentUser = null;
                 appContainer.classList.add("hidden");
@@ -1156,6 +1232,35 @@
             });
         }
 
+        // Native Notification Listener Core Injection
+        function listenGlobalIncomingMessagesForNotification() {
+            // Listen across friendships
+            const qAllFriendships = query(collection(db, "friendships"), or(where("user1", "==", currentUser.uid), where("user2", "==", currentUser.uid)));
+            onSnapshot(qAllFriendships, (snapshot) => {
+                snapshot.docChanges().forEach(async (change) => {
+                    if (change.type === "modified") {
+                        const data = change.doc.data();
+                        // Verify message wasn't caused by current user
+                        if (data.lastMessageSenderId && data.lastMessageSenderId !== currentUser.uid) {
+                            if (activeChatUserId !== data.lastMessageSenderId || isGroupRoomMode) {
+                                triggerNativeAlertNotification("New Message Alert", data.lastMessage || "Attachment Received.");
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        function triggerNativeAlertNotification(title, text) {
+            try { alertAudio.play().catch(()=>{}); } catch(e){}
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(title, {
+                    body: text,
+                    icon: "https://api.dicebear.com/7.x/adventurer/svg?seed=Alert"
+                });
+            }
+        }
+
         function listenRequestBadge() {
             const qReq = query(collection(db, "friendRequests"), where("receiverId", "==", currentUser.uid), where("status", "==", "pending"));
             onSnapshot(qReq, (snap) => {
@@ -1166,18 +1271,31 @@
             });
         }
 
+        function toggleAdminPanelDisplay() {
+            if (activeTab === "rooms" && currentUserRole === "admin") {
+                adminRoomCreationPanel.classList.remove("hidden");
+            } else {
+                adminRoomCreationPanel.classList.add("hidden");
+            }
+        }
+
         function switchTab(tabName) {
             activeTab = tabName;
             tabChats.classList.remove("active");
+            tabRooms.classList.remove("active");
             tabFriends.classList.remove("active");
             tabRequests.classList.remove("active");
             
+            toggleAdminPanelDisplay();
             if(unsubscribeRealtimeStream) { unsubscribeRealtimeStream(); unsubscribeRealtimeStream = null; }
             activeChatsList.innerHTML = "";
 
             if (tabName === "chats") {
                 tabChats.classList.add("active");
                 loadAcceptedChatsStream();
+            } else if (tabName === "rooms") {
+                tabRooms.classList.add("active");
+                loadGroupRoomsStream();
             } else if (tabName === "friends") {
                 tabFriends.classList.add("active");
                 loadGlobalUsersExplore();
@@ -1189,8 +1307,41 @@
         window.switchTab = switchTab; 
 
         tabChats.addEventListener("click", () => switchTab("chats"));
+        tabRooms.addEventListener("click", () => switchTab("rooms"));
         tabFriends.addEventListener("click", () => switchTab("friends"));
         tabRequests.addEventListener("click", () => switchTab("requests"));
+
+        // Admin Room Generation Interceptor Event Pipeline
+        adminCreateRoomForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (currentUserRole !== "admin") {
+                alert("Operation rejected. Admin privileges required.");
+                return;
+            }
+
+            const roomName = adminNewRoomName.value.trim();
+            const roomDesc = adminNewRoomDesc.value.trim();
+            if(!roomName || !roomDesc) return;
+
+            const customRoomId = "room_" + new Date().getTime();
+
+            try {
+                await setDoc(doc(db, "group_rooms", customRoomId), {
+                    roomId: customRoomId,
+                    roomName: roomName,
+                    description: roomDesc,
+                    photoURL: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(roomName)}`,
+                    createdBy: currentUser.uid,
+                    timestamp: new Date().getTime()
+                });
+
+                adminNewRoomName.value = "";
+                adminNewRoomDesc.value = "";
+                showToast(" Longe matrix successfully deployed!");
+            } catch(error) {
+                alert("Failed to build workspace lounge: " + error.message);
+            }
+        });
 
         function loadAcceptedChatsStream() {
             const qFriendships = query(collection(db, "friendships"), or(where("user1", "==", currentUser.uid), where("user2", "==", currentUser.uid)));
@@ -1219,6 +1370,98 @@
                         renderUserRow(uSnap.docs[0].data(), fData.lastMessage || "Click to open workspace chat", "chat_click");
                     }
                 }
+            });
+        }
+
+        /* Group Rooms Structural Logic Component */
+        function loadGroupRoomsStream() {
+            activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">Syncing secure lounge architectures...</p>`;
+            const qRooms = query(collection(db, "group_rooms"));
+            
+            unsubscribeRealtimeStream = onSnapshot(qRooms, (snapshot) => {
+                if (activeTab !== "rooms") return;
+                activeChatsList.innerHTML = "";
+
+                if(snapshot.empty) {
+                    // Seed standard room layout
+                    setDoc(doc(db, "group_rooms", "global_public_lounge"), {
+                        roomId: "global_public_lounge",
+                        roomName: "Global Public Lounge",
+                        description: "Standard structural room open to everyone.",
+                        photoURL: "https://api.dicebear.com/7.x/identicon/svg?seed=global_lounge"
+                    });
+                    return;
+                }
+
+                snapshot.forEach(roomDoc => {
+                    const rData = roomDoc.data();
+                    const li = document.createElement("li");
+                    li.innerHTML = `
+                        <div class="user-item-info" style="cursor:pointer; width:100%;">
+                            <div class="user-core">
+                                <img src="${rData.photoURL || 'https://via.placeholder.com/40'}" class="avatar" style="border-color: var(--pink-light)">
+                                <div style="display:flex; flex-direction:column;">
+                                    <span class="name">${rData.roomName}</span>
+                                    <span class="subtext">${rData.description || 'Public channel communication matrix'}</span>
+                                </div>
+                            </div>
+                            <div class="user-action-side">
+                                <button class="action-btn-sm btn-pink">Join Room</button>
+                            </div>
+                        </div>
+                    `;
+                    li.addEventListener("click", () => openGroupRoomChatWindow(rData.roomId, rData.roomName, rData.photoURL));
+                    activeChatsList.appendChild(li);
+                });
+            });
+        }
+
+        async function openGroupRoomChatWindow(roomId, roomName, roomPhoto) {
+            activeChatUserId = roomId;
+            isGroupRoomMode = true;
+            appSidebar.classList.add("mobile-hidden");
+            chatWindowView.classList.add("mobile-active");
+            welcomeView.classList.add("hidden");
+            activeChatView.classList.remove("hidden");
+            
+            resetAttachmentQueue();
+            gifPanel.classList.add("hidden");
+            window.activeAudioNodes.forEach(node => { if(node.audio) node.audio.pause(); });
+            window.activeAudioNodes.clear();
+
+            if (unsubscribeTargetUserStatus) unsubscribeTargetUserStatus();
+            
+            chatUserName.innerText = roomName;
+            chatUserAvatar.src = roomPhoto || 'https://via.placeholder.com/40';
+            chatUserStatus.innerText = "Public Broadcast Module";
+            chatUserStatus.style.color = "var(--text-muted)";
+
+            if (unsubscribeMessagesSub) unsubscribeMessagesSub();
+
+            const msgQuery = query(collection(db, "group_rooms", roomId, "room_messages"), orderBy("timestamp", "asc"));
+            unsubscribeMessagesSub = onSnapshot(msgQuery, (snapshot) => {
+                if (activeChatUserId !== roomId || !isGroupRoomMode) return;
+                let messagesHTML = "";
+
+                if(snapshot.empty){
+                    messagesDisplay.innerHTML = `<p style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.85rem;">No transmissions inside this room yet.</p>`;
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const msgData = doc.data();
+                    messagesHTML += getSingleMessageBubbleHTML(msgData, doc.id);
+                });
+
+                messagesDisplay.innerHTML = messagesHTML;
+                
+                snapshot.forEach(doc => {
+                    const msgData = doc.data();
+                    if(msgData.voiceNotes) {
+                        initCustomAudioPlayerInstance(doc.id, msgData.voiceNotes);
+                    }
+                });
+                messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
             });
         }
 
@@ -1355,6 +1598,7 @@
 
         async function openChatWindowWithTargetUser(targetUid) {
             activeChatUserId = targetUid;
+            isGroupRoomMode = false;
             appSidebar.classList.add("mobile-hidden");
             chatWindowView.classList.add("mobile-active");
             welcomeView.classList.add("hidden");
@@ -1369,7 +1613,7 @@
             if (unsubscribeTargetUserStatus) unsubscribeTargetUserStatus();
 
             unsubscribeTargetUserStatus = onSnapshot(doc(db, "users", targetUid), (docSnap) => {
-                if(docSnap.exists() && activeChatUserId === targetUid) {
+                if(docSnap.exists() && activeChatUserId === targetUid && !isGroupRoomMode) {
                     const data = docSnap.data();
                     chatUserName.innerText = data.fullName || data.username;
                     chatUserAvatar.src = data.photoURL || 'https://via.placeholder.com/40';
@@ -1394,7 +1638,7 @@
             const msgQuery = query(msgCollectionRef, orderBy("timestamp", "asc"));
 
             unsubscribeMessagesSub = onSnapshot(msgQuery, async (snapshot) => {
-                if (activeChatUserId !== targetUid) return;
+                if (activeChatUserId !== targetUid || isGroupRoomMode) return;
                 
                 let messagesHTML = "";
                 const batch = writeBatch(db);
@@ -1459,7 +1703,7 @@
         }
 
         messageInput.addEventListener("input", async () => {
-            if (!currentUser || !activeChatUserId) return;
+            if (!currentUser || !activeChatUserId || isGroupRoomMode) return;
             try {
                 await updateDoc(doc(db, "users", currentUser.uid), { isTypingTo: activeChatUserId });
                 clearTimeout(typingTimeout);
@@ -1648,11 +1892,31 @@
             if (!activeChatUserId || !currentUser) return;
             
             clearTimeout(typingTimeout);
-            try { await updateDoc(doc(db, "users", currentUser.uid), { isTypingTo: null }); } catch(err){}
+            try { if(!isGroupRoomMode) await updateDoc(doc(db, "users", currentUser.uid), { isTypingTo: null }); } catch(err){}
 
             const currentTimestamp = new Date().getTime();
-            const roomId = getChatRoomId(currentUser.uid, activeChatUserId);
 
+            // Setup Payload Layout Base Matrix
+            const payload = {
+                senderId: currentUser.uid,
+                senderName: currentUser.displayName || "Anonymous Node",
+                text: textContent,
+                timestamp: currentTimestamp
+            };
+            if(customGifUrl) payload.gifUrl = customGifUrl;
+            if(customAttachedImageBase64) payload.attachedImage = customAttachedImageBase64;
+            if(customVoiceBase64) payload.voiceNotes = customVoiceBase64;
+
+            if (isGroupRoomMode) {
+                // Route via Group Collection
+                try {
+                    await addDoc(collection(db, "group_rooms", activeChatUserId, "room_messages"), payload);
+                } catch(e) { showToast("Broadcast failure."); }
+                return;
+            }
+
+            // Standard Private Room Routing Core Pipeline
+            const roomId = getChatRoomId(currentUser.uid, activeChatUserId);
             let initialStatus = "sent";
             try {
                 const targetUserSnap = await getDoc(doc(db, "users", activeChatUserId));
@@ -1670,17 +1934,8 @@
                 const chatRoomRef = doc(db, "friendships", roomId);
                 const msgCollectionRef = collection(chatRoomRef, "chat_messages");
 
-                const payload = {
-                    senderId: currentUser.uid,
-                    receiverId: activeChatUserId,
-                    text: textContent,
-                    timestamp: currentTimestamp,
-                    status: initialStatus
-                };
-
-                if(customGifUrl) payload.gifUrl = customGifUrl;
-                if(customAttachedImageBase64) payload.attachedImage = customAttachedImageBase64;
-                if(customVoiceBase64) payload.voiceNotes = customVoiceBase64;
+                payload.receiverId = activeChatUserId;
+                payload.status = initialStatus;
 
                 await addDoc(msgCollectionRef, payload);
 
@@ -1693,6 +1948,7 @@
                     user1: currentUser.uid < activeChatUserId ? currentUser.uid : activeChatUserId,
                     user2: currentUser.uid < activeChatUserId ? activeChatUserId : currentUser.uid,
                     lastMessage: systemLogPreview,
+                    lastMessageSenderId: currentUser.uid,
                     timestamp: currentTimestamp
                 }, { merge: true });
 
@@ -1711,7 +1967,7 @@
             }
 
             let tickHTML = "";
-            if (isSent) {
+            if (isSent && !isGroupRoomMode) {
                 const currentStatus = msgData.status || "sent";
                 if (currentStatus === "seen") {
                     tickHTML = `<span class="status-tick seen"><i class="fas fa-check-double"></i></span>`;
@@ -1741,10 +1997,14 @@
 
             const isPlaceholderText = (msgData.text === "[Photo Attachment]" || msgData.text === "[GIF]" || msgData.text === "[Voice Note]");
             const displayableText = isPlaceholderText ? "" : `<p style="word-break: break-word; white-space: pre-wrap;">${escapeHTML(msgData.text)}</p>`;
+            
+            // Add Room username matrix identity labels
+            const senderIdentityTag = (!isSent && isGroupRoomMode) ? `<div style="font-size: 0.75rem; font-weight: bold; color: var(--pink-primary); margin-bottom: 4px;">@${escapeHTML(msgData.senderName || 'Anonymous')}</div>` : '';
 
             return `
                 <div class="${rowClass}">
                     <div class="msg-bubble">
+                        ${senderIdentityTag}
                         ${displayableText}
                         ${mediaEmbedHTML}
                         <div class="msg-meta-wrapper">
@@ -1829,6 +2089,7 @@
                 activeChatView.classList.add("hidden");
                 welcomeView.classList.remove("hidden");
                 activeChatUserId = null;
+                isGroupRoomMode = false;
                 
                 window.activeAudioNodes.forEach(node => node.audio.pause());
                 if(unsubscribeTargetUserStatus) unsubscribeTargetUserStatus();
@@ -1896,7 +2157,7 @@
 
         if (targetUserProfileTrigger) {
             targetUserProfileTrigger.addEventListener("click", async () => {
-                if (!activeChatUserId) return;
+                if (!activeChatUserId || isGroupRoomMode) return;
                 setProfileModalMode(true);
                 profileModal.classList.remove("hidden");
                 try {

@@ -23,6 +23,11 @@
             --text-main: #FFFFFF;
             --text-muted: #8F92A1;
             --glass-border: rgba(255, 0, 127, 0.15);
+            
+            /* Status Colors */
+            --status-sent: #8F92A1;
+            --status-delivered: #CCCCCC;
+            --status-seen: #00E6FF; /* ব্লু বা নিয়ন কালার টিক */
         }
 
         * {
@@ -113,7 +118,6 @@
             box-shadow: 0 0 10px rgba(255, 0, 127, 0.2);
         }
 
-        /* View Mode Input Locking */
         .input-group input:disabled {
             background: rgba(255, 255, 255, 0.02) !important;
             border-color: rgba(255, 0, 127, 0.05) !important;
@@ -305,7 +309,7 @@
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 0 20px rgba(255,0,127,0.5); }
+            0+ { transform: scale(1); box-shadow: 0 0 20px rgba(255,0,127,0.5); }
             50% { transform: scale(1.03); box-shadow: 0 0 35px rgba(255,0,127,0.8); }
             100% { transform: scale(1); box-shadow: 0 0 20px rgba(255,0,127,0.5); }
         }
@@ -366,13 +370,29 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
+        /* Message Footer Context (Meta Info) */
+        .msg-meta-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
         .msg-meta {
             font-size: 0.7rem;
             color: rgba(255,255,255,0.6);
-            margin-top: 5px;
-            text-align: right;
-            display: block;
         }
+
+        /* Tick/Arrow Status Styles */
+        .status-tick {
+            font-size: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+        }
+        .status-tick.sent { color: var(--status-sent); }
+        .status-tick.delivered { color: var(--status-delivered); }
+        .status-tick.seen { color: var(--status-seen); }
 
         .message-input-area {
             padding: 20px;
@@ -432,7 +452,6 @@
             transition: all 0.3s ease;
         }
 
-        /* Mobile Adjustments */
         @media (max-width: 768px) {
             .sidebar { width: 100%; }
             .sidebar.mobile-hidden { display: none !important; }
@@ -542,6 +561,7 @@
         </div>
     </div>
 
+    <!-- User Profile Modal -->
     <div id="profile-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
         <div class="auth-box" style="position: relative; max-width: 420px; width: 100%;">
             <button id="close-profile-btn" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;"><i class="fas fa-times"></i></button>
@@ -582,7 +602,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, query, where, or, orderBy, onSnapshot, addDoc, getDocs, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, collection, query, where, or, orderBy, onSnapshot, addDoc, getDocs, updateDoc, deleteDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCr9Bfn4Ep-qw9JFkguyak00dsN90GSgRY",
@@ -639,7 +659,6 @@
         const profileProfession = document.getElementById("profile-profession");
         const profileSaveBtn = document.getElementById("profile-save-btn");
         
-        // Added References for View Mode Functionality
         const modalTitle = document.getElementById("modal-title");
         const modalSubtitle = document.getElementById("modal-subtitle");
         const uploadDpLabel = document.getElementById("upload-dp-label");
@@ -967,7 +986,8 @@
             const msgCollectionRef = collection(db, "friendships", targetRoomId, "chat_messages");
             const msgQuery = query(msgCollectionRef, orderBy("timestamp", "asc"));
 
-            unsubscribeMessagesSub = onSnapshot(msgQuery, (snapshot) => {
+            // Realtime Stream of Messages
+            unsubscribeMessagesSub = onSnapshot(msgQuery, async (snapshot) => {
                 if (activeChatUserId !== targetUid) return;
                 messagesDisplay.innerHTML = "";
                 
@@ -975,9 +995,27 @@
                     messagesDisplay.innerHTML = `<p style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.85rem;">Encryption enabled. Secure logs empty.</p>`;
                 }
 
+                const batch = writeBatch(db);
+                let needsBatchUpdate = false;
+
                 snapshot.forEach(doc => {
-                    renderSingleMessageBubble(doc.data());
+                    const msgData = doc.data();
+                    
+                    // RECEIVED মেসেজ যদি 'seen' না হয়ে থাকে, তবে সেটাকে 'seen' মার্ক করো
+                    if (msgData.senderId === targetUid && msgData.status !== "seen") {
+                        const msgDocRef = doc.ref;
+                        batch.update(msgDocRef, { status: "seen" });
+                        needsBatchUpdate = true;
+                        msgData.status = "seen"; // Local update for UI rendering
+                    }
+                    
+                    renderSingleMessageBubble(msgData);
                 });
+
+                if (needsBatchUpdate) {
+                    try { await batch.commit(); } catch(e) { console.error("Seen status update failure:", e); }
+                }
+
                 messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
             }, (error) => {
                 console.error("Firestore Runtime Stream Failure:", error);
@@ -1033,6 +1071,15 @@
             const currentTimestamp = new Date().getTime();
             const roomId = getChatRoomId(currentUser.uid, activeChatUserId);
 
+            // অপরপক্ষ যদি অনলাইনে থাকে তাহলে 'delivered' অন্যথায় 'sent'
+            let initialStatus = "sent";
+            try {
+                const targetUserSnap = await getDoc(doc(db, "users", activeChatUserId));
+                if (targetUserSnap.exists() && targetUserSnap.data().status === "online") {
+                    initialStatus = "delivered";
+                }
+            } catch(e) { console.error(e); }
+
             try {
                 const chatRoomRef = doc(db, "friendships", roomId);
                 const msgCollectionRef = collection(chatRoomRef, "chat_messages");
@@ -1041,7 +1088,8 @@
                     senderId: currentUser.uid,
                     receiverId: activeChatUserId,
                     text: txt,
-                    timestamp: currentTimestamp
+                    timestamp: currentTimestamp,
+                    status: initialStatus // Dynamic validation: sent or delivered
                 });
 
                 await setDoc(chatRoomRef, {
@@ -1067,10 +1115,26 @@
                 timeString = new Date(msgData.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             }
 
+            // Arrow/Tick rendering logic for sent messages
+            let tickHTML = "";
+            if (isSent) {
+                const currentStatus = msgData.status || "sent";
+                if (currentStatus === "seen") {
+                    tickHTML = `<span class="status-tick seen" title="Seen"><i class="fas fa-check-double"></i></span>`;
+                } else if (currentStatus === "delivered") {
+                    tickHTML = `<span class="status-tick delivered" title="Delivered"><i class="fas fa-check-double"></i></span>`;
+                } else {
+                    tickHTML = `<span class="status-tick sent" title="Sent"><i class="fas fa-check"></i></span>`;
+                }
+            }
+
             row.innerHTML = `
                 <div class="msg-bubble">
                     <p style="word-break: break-word; white-space: pre-wrap;">${escapeHTML(msgData.text)}</p>
-                    <span class="msg-meta">${timeString}</span>
+                    <div class="msg-meta-wrapper">
+                        <span class="msg-meta">${timeString}</span>
+                        ${tickHTML}
+                    </div>
                 </div>
             `;
             messagesDisplay.appendChild(row);
@@ -1120,17 +1184,13 @@
             if(!found) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No identities matching query strings.</p>`;
         });
 
-        // ==================== PROFILE LOGIC & EVENTS ====================
-        
-        // FUNCTION TO TOGGLE BETWEEN EDIT AND VIEW MODES
+        // Profile update mode switcher
         function setProfileModalMode(isViewMode) {
             if (isViewMode) {
                 modalTitle.innerText = "User Profile";
                 modalSubtitle.innerText = "Network details of the connected node";
                 uploadDpLabel.classList.add("hidden");
                 profileSaveBtn.classList.add("hidden");
-                
-                // Disable fields so they can't be typed in
                 profileName.disabled = true;
                 profileAge.disabled = true;
                 profileFrom.disabled = true;
@@ -1140,8 +1200,6 @@
                 modalSubtitle.innerText = "Update your network identity and details";
                 uploadDpLabel.classList.remove("hidden");
                 profileSaveBtn.classList.remove("hidden");
-                
-                // Enable fields for editing
                 profileName.disabled = false;
                 profileAge.disabled = false;
                 profileFrom.disabled = false;
@@ -1152,7 +1210,7 @@
         if (openProfileBtn) {
             openProfileBtn.addEventListener("click", async () => {
                 if (!currentUser) return;
-                setProfileModalMode(false); // Edit Mode for current user
+                setProfileModalMode(false);
                 profileModal.classList.remove("hidden");
                 
                 try {
@@ -1169,11 +1227,10 @@
             });
         }
 
-        // DYNAMIC PROFILE TRIGGER FOR OTHER USERS
         if (targetUserProfileTrigger) {
             targetUserProfileTrigger.addEventListener("click", async () => {
                 if (!activeChatUserId) return;
-                setProfileModalMode(true); // View Mode for other users
+                setProfileModalMode(true);
                 profileModal.classList.remove("hidden");
 
                 try {
@@ -1211,7 +1268,6 @@
             });
         }
 
-        // ==================== IMPLEMENTED METHOD 1 (BASE64) ====================
         if (profileUpdateForm) {
             profileUpdateForm.addEventListener("submit", async (e) => {
                 e.preventDefault();
@@ -1247,9 +1303,7 @@
                             displayName: profileName.value.trim(),
                             photoURL: downloadURL.startsWith('data:') ? currentUser.photoURL : downloadURL
                         });
-                    } catch(authErr) { 
-                        console.log("Auth photo sync bypassed, saving to Firestore database directly."); 
-                    }
+                    } catch(authErr) {}
 
                     await setDoc(doc(db, "users", currentUser.uid), {
                         fullName: profileName.value.trim(),

@@ -2592,7 +2592,10 @@ let socialProfileUnsub = null;
                             <span class="subtext">${subtext}</span>
                         </div>
                     </div>
-                    <div class="user-action-side">${type === 'action' ? actionHTML : ''}</div>
+                    <div class="user-action-side" style="display:flex; gap:6px; align-items:center;">
+                    ${type === 'action' ? actionHTML : ''}
+                    <button class="action-btn-sm btn-muted" onclick="event.stopPropagation(); window.openSocialProfile('${userData.uid}');" title="View Profile"><i class="fas fa-user"></i></button>
+                </div>
                 </div>
             `;
             if(type === "chat_click") {
@@ -3757,28 +3760,39 @@ function renderBadges(badges, userData) {
 
 function renderSocialProfile(data, isOwnProfile) {
     const modal = document.getElementById('social-profile-modal');
+    if (!modal) return;
     const card = document.getElementById('social-profile-card');
+    if (!card) return;
     card.className = `social-profile-card profile-theme-${data.profileTheme || 'blackpink'}`;
     card.style.fontFamily = getFontFamily(data.fontStyle);
 
-    document.getElementById('social-profile-avatar').src = data.photoURL || 'https://via.placeholder.com/110';
+    const avatar = document.getElementById('social-profile-avatar');
+    if (avatar) avatar.src = data.photoURL || 'https://via.placeholder.com/110';
 
     const frameOverlay = document.getElementById('social-profile-frame');
     const borderOverlay = document.getElementById('social-avatar-border');
-    frameOverlay.className = `profile-frame-overlay ${data.profileFrame !== 'none' && data.profileFrame ? 'profile-frame-' + data.profileFrame : ''}`;
-    borderOverlay.className = `avatar-border-overlay ${data.avatarBorder !== 'none' && data.avatarBorder ? 'avatar-border-' + data.avatarBorder : ''}`;
+    if (frameOverlay) frameOverlay.className = `profile-frame-overlay ${data.profileFrame !== 'none' && data.profileFrame ? 'profile-frame-' + data.profileFrame : ''}`;
+    if (borderOverlay) borderOverlay.className = `avatar-border-overlay ${data.avatarBorder !== 'none' && data.avatarBorder ? 'avatar-border-' + data.avatarBorder : ''}`;
 
-    document.getElementById('social-profile-name').innerText = data.fullName || data.username || 'User';
+    const nameEl = document.getElementById('social-profile-name');
+    if (nameEl) nameEl.innerText = data.fullName || data.username || 'User';
     renderBadges(data.badges || [], data);
-    document.getElementById('social-profile-bio').innerText = data.bio || "No bio yet.";
+    const bioEl = document.getElementById('social-profile-bio');
+    if (bioEl) bioEl.innerText = data.bio || "No bio yet.";
 
-    document.getElementById('stat-friends').innerText = data.friendsCount || 0;
-    document.getElementById('stat-rooms').innerText = data.roomsJoined || 0;
+    const friendsEl = document.getElementById('stat-friends');
+    if (friendsEl) friendsEl.innerText = data.friendsCount || 0;
+    const roomsEl = document.getElementById('stat-rooms');
+    if (roomsEl) roomsEl.innerText = data.roomsJoined || 0;
 
-    document.getElementById('social-profile-gold').innerText = (data.gold || 0).toLocaleString();
+    const goldEl = document.getElementById('social-profile-gold');
+    if (goldEl) goldEl.innerText = (data.gold || 0).toLocaleString();
 
-    const created = data.accountCreated ? new Date(data.accountCreated).toLocaleDateString() : 'Unknown';
-    document.getElementById('social-profile-created').innerText = `Joined ${created}`;
+    const createdEl = document.getElementById('social-profile-created');
+    if (createdEl) {
+        const created = data.accountCreated ? new Date(data.accountCreated).toLocaleDateString() : 'Unknown';
+        createdEl.innerText = `Joined ${created}`;
+    }
 
     const bannerEl = document.querySelector('#social-profile-card .profile-banner');
     if (bannerEl) {
@@ -3793,28 +3807,29 @@ function renderSocialProfile(data, isOwnProfile) {
     const musicPlayer = document.getElementById('profile-music-player');
     const musicToggle = document.getElementById('profile-music-toggle');
     if (data.profileMusic && data.profileMusic.trim()) {
-        musicContainer.classList.remove('hidden');
-        musicPlayer.src = data.profileMusic;
-        musicToggle.innerHTML = '<i class="fas fa-music"></i> Play Profile Music';
-        musicToggle.onclick = () => {
-            if (musicPlayer.paused) {
-                musicPlayer.play().catch(()=>{});
-                musicToggle.innerHTML = '<i class="fas fa-pause"></i> Pause Music';
-            } else {
-                musicPlayer.pause();
-                musicToggle.innerHTML = '<i class="fas fa-music"></i> Play Profile Music';
-            }
-        };
+        if (musicContainer) musicContainer.classList.remove('hidden');
+        if (musicPlayer) {
+            musicPlayer.src = data.profileMusic;
+            musicToggle.innerHTML = '<i class="fas fa-music"></i> Play Profile Music';
+            musicToggle.onclick = () => {
+                if (musicPlayer.paused) {
+                    musicPlayer.play().catch(()=>{});
+                    musicToggle.innerHTML = '<i class="fas fa-pause"></i> Pause Music';
+                } else {
+                    musicPlayer.pause();
+                    musicToggle.innerHTML = '<i class="fas fa-music"></i> Play Profile Music';
+                }
+            };
+        }
     } else {
-        musicContainer.classList.add('hidden');
-        musicPlayer.pause();
-        musicPlayer.src = "";
+        if (musicContainer) musicContainer.classList.add('hidden');
+        if (musicPlayer) { musicPlayer.pause(); musicPlayer.src = ""; }
     }
 
     const editBtn = document.getElementById('edit-profile-from-view');
     const diceBtn = document.getElementById('open-dice-game-btn');
-    editBtn.style.display = isOwnProfile ? 'inline-flex' : 'none';
-    diceBtn.style.display = isOwnProfile ? 'inline-flex' : 'none';
+    if (editBtn) editBtn.style.display = isOwnProfile ? 'inline-flex' : 'none';
+    if (diceBtn) diceBtn.style.display = isOwnProfile ? 'inline-flex' : 'none';
 }
 
 async function openSocialProfile(targetUid = null) {

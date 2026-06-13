@@ -474,7 +474,10 @@
                     <img id="current-user-avatar" src="https://via.placeholder.com/40" class="avatar" alt="Avatar">
                     <span id="current-user-name">Loading...</span>
                 </div>
-                <button id="logout-btn" class="icon-btn"><i class="fas fa-arrow-right-from-bracket"></i></button>
+                <div>
+                    <button id="open-profile-btn" class="icon-btn" style="margin-right: 15px;"><i class="fas fa-user-gear"></i></button>
+                    <button id="logout-btn" class="icon-btn"><i class="fas fa-arrow-right-from-bracket"></i></button>
+                </div>
             </div>
             
             <div class="search-box">
@@ -529,12 +532,49 @@
         </div>
     </div>
 
+    <div id="profile-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
+        <div class="auth-box" style="position: relative; max-width: 420px; width: 100%;">
+            <button id="close-profile-btn" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;"><i class="fas fa-times"></i></button>
+            <div class="auth-header">
+                <h2>Edit Profile</h2>
+                <p>Update your network identity and details</p>
+            </div>
+            <form id="profile-update-form">
+                <div style="margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                    <img id="modal-preview-avatar" src="https://via.placeholder.com/90" style="width: 90px; height: 90px; border-radius: 50%; border: 2px solid var(--pink-primary); object-fit: cover;">
+                    <label for="profile-dp-input" class="action-btn-sm btn-pink" style="cursor: pointer; display: inline-block; padding: 8px 15px;"><i class="fas fa-camera"></i> Select Photo</label>
+                    <input type="file" id="profile-dp-input" accept="image/*" class="hidden">
+                </div>
+                
+                <div class="input-group">
+                    <i class="fas fa-signature"></i>
+                    <input type="text" id="profile-name" placeholder="Full Name" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-calendar-alt"></i>
+                    <input type="number" id="profile-age" placeholder="Age" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <input type="text" id="profile-from" placeholder="From (City/Country)" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-briefcase"></i>
+                    <input type="text" id="profile-profession" placeholder="Profession" required>
+                </div>
+                <button type="submit" class="main-btn" id="profile-save-btn">Save Profile</button>
+            </form>
+        </div>
+    </div>
+
     <div id="app-notification" class="toast hidden"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, query, where, or, orderBy, onSnapshot, addDoc, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, collection, query, where, or, orderBy, onSnapshot, addDoc, getDocs, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // STORAGE REMOVED: বিকল্প ১ ব্যবহারের কারণে ক্লাউড স্টোরেজের ইমপোর্ট লাইন ফেলে দেওয়া হয়েছে।
 
         const firebaseConfig = {
             apiKey: "AIzaSyCr9Bfn4Ep-qw9JFkguyak00dsN90GSgRY",
@@ -578,6 +618,19 @@
         const tabRequests = document.getElementById("tab-requests");
         const reqBadge = document.getElementById("req-badge");
 
+        // Profile DOM References
+        const profileModal = document.getElementById("profile-modal");
+        const openProfileBtn = document.getElementById("open-profile-btn");
+        const closeProfileBtn = document.getElementById("close-profile-btn");
+        const profileUpdateForm = document.getElementById("profile-update-form");
+        const profileDpInput = document.getElementById("profile-dp-input");
+        const modalPreviewAvatar = document.getElementById("modal-preview-avatar");
+        const profileName = document.getElementById("profile-name");
+        const profileAge = document.getElementById("profile-age");
+        const profileFrom = document.getElementById("profile-from");
+        const profileProfession = document.getElementById("profile-profession");
+        const profileSaveBtn = document.getElementById("profile-save-btn");
+
         let currentUser = null;
         let activeChatUserId = null;
         let unsubscribeMessagesSub = null;
@@ -585,6 +638,7 @@
         let isLoginMode = false; 
         let activeTab = "chats";
         let typingTimeout = null;
+        let selectedFile = null;
 
         function getChatRoomId(uid1, uid2) {
             return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
@@ -640,8 +694,18 @@
                 currentUser = user;
                 authContainer.classList.add("hidden");
                 appContainer.classList.remove("hidden");
-                document.getElementById("current-user-name").innerText = user.displayName || "User";
-                document.getElementById("current-user-avatar").src = user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.displayName}`;
+                
+                onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+                    if (docSnap.exists()) {
+                        const uData = docSnap.data();
+                        document.getElementById("current-user-name").innerText = uData.fullName || uData.username || user.displayName || "User";
+                        document.getElementById("current-user-avatar").src = uData.photoURL || user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.displayName}`;
+                    } else {
+                        document.getElementById("current-user-name").innerText = user.displayName || "User";
+                        document.getElementById("current-user-avatar").src = user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.displayName}`;
+                    }
+                });
+
                 try { await updateDoc(doc(db, "users", user.uid), { status: "online" }); } catch(e) {}
                 switchTab("chats");
                 listenRequestBadge();
@@ -775,7 +839,9 @@
                                 }
                             }
                         }
-                        renderUserRow(u, `@${u.username}`, "action", buttonHTML);
+                        
+                        const subDescription = u.profession ? `${u.profession} • @${u.username}` : `@${u.username}`;
+                        renderUserRow(u, subDescription, "action", buttonHTML);
                     }
                 });
 
@@ -866,14 +932,16 @@
             onSnapshot(doc(db, "users", targetUid), (docSnap) => {
                 if(docSnap.exists() && activeChatUserId === targetUid) {
                     const data = docSnap.data();
-                    chatUserName.innerText = data.username;
+                    
+                    chatUserName.innerText = data.fullName || data.username;
                     chatUserAvatar.src = data.photoURL || 'https://via.placeholder.com/40';
                     
                     if (data.isTypingTo === currentUser.uid) {
                         chatUserStatus.innerText = "Typing message...";
                         chatUserStatus.style.color = "var(--pink-light)";
                     } else {
-                        chatUserStatus.innerText = data.status === "online" ? "Active" : "Away";
+                        const currentStatus = data.status === "online" ? "Active" : "Away";
+                        chatUserStatus.innerText = data.profession ? `${data.profession} | ${currentStatus}` : currentStatus;
                         chatUserStatus.style.color = data.status === "online" ? "var(--pink-light)" : "var(--text-muted)";
                     }
                 }
@@ -913,7 +981,7 @@
                             <span style="position:absolute; bottom:0; right:0; width:10px; height:10px; border-radius:50%; background:${userData.status === 'online' ? 'var(--pink-primary)' : '#555'}; border:2px solid var(--bg-sidebar);"></span>
                         </div>
                         <div style="display:flex; flex-direction:column;">
-                            <span class="name">${userData.username}</span>
+                            <span class="name">${userData.fullName || userData.username}</span>
                             <span class="subtext">${subtext}</span>
                         </div>
                     </div>
@@ -1037,6 +1105,115 @@
             });
             if(!found) activeChatsList.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">No identities matching query strings.</p>`;
         });
+
+        // ==================== PROFILE LOGIC & EVENTS ====================
+        if (openProfileBtn) {
+            openProfileBtn.addEventListener("click", async () => {
+                if (!currentUser) return;
+                profileModal.classList.remove("hidden");
+                
+                try {
+                    const userDocSnap = await getDoc(doc(db, "users", currentUser.uid));
+                    if (userDocSnap.exists()) {
+                        const userData = userDocSnap.data();
+                        profileName.value = userData.fullName || currentUser.displayName || "";
+                        profileAge.value = userData.age || "";
+                        profileFrom.value = userData.from || "";
+                        profileProfession.value = userData.profession || "";
+                        modalPreviewAvatar.src = userData.photoURL || currentUser.photoURL || "https://via.placeholder.com/90";
+                    }
+                } catch (e) { console.error("Profile data fetch anomaly:", e); }
+            });
+        }
+
+        if (closeProfileBtn) {
+            closeProfileBtn.addEventListener("click", () => {
+                profileModal.classList.add("hidden");
+                selectedFile = null;
+            });
+        }
+
+        if (profileDpInput) {
+            profileDpInput.addEventListener("change", (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    selectedFile = file;
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        modalPreviewAvatar.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // ==================== IMPLEMENTED METHOD 1 (BASE64) ====================
+        if (profileUpdateForm) {
+            profileUpdateForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                if (!currentUser) return;
+
+                profileSaveBtn.disabled = true;
+                profileSaveBtn.innerText = "Synchronizing...";
+
+                let downloadURL = modalPreviewAvatar.src; // ডিফল্ট বা আগের ইমেজ URL
+
+                // File Reader দিয়ে ইমেজকে Base64 এ কনভার্ট করার এসিনক্রোনাস ফাংশন
+                const convertFileToBase64 = (file) => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(file);
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = (error) => reject(error);
+                    });
+                };
+
+                try {
+                    // ইউজার যদি নতুন ইমেজ সিলেক্ট করে থাকে
+                    if (selectedFile) {
+                        // ২ মেগাবাইটের বেশি ছবি আপলোড করতে বাধা দিবে (Firestore single document limit is 16MB, keeping it safe under 2MB)
+                        if (selectedFile.size > 2 * 1024 * 1024) {
+                            alert("Image is too large! Please select an image under 2MB.");
+                            profileSaveBtn.disabled = false;
+                            profileSaveBtn.innerText = "Save Profile";
+                            return;
+                        }
+                        downloadURL = await convertFileToBase64(selectedFile);
+                    }
+
+                    // Firebase Auth Profile-এর ডিসপ্লে নেম ও ফটো সিঙ্ক
+                    try {
+                        await updateProfile(currentUser, {
+                            displayName: profileName.value.trim(),
+                            photoURL: downloadURL.startsWith('data:') ? currentUser.photoURL : downloadURL
+                        });
+                    } catch(authErr) { 
+                        console.log("Auth photo sync bypassed, saving to Firestore database directly."); 
+                    }
+
+                    // সম্পূর্ণ ডাটা (Base64 ইমেজ স্ট্রিং সহ) Firestore "users" কালেকশনে সেভ করা
+                    await setDoc(doc(db, "users", currentUser.uid), {
+                        fullName: profileName.value.trim(),
+                        age: Number(profileAge.value),
+                        from: profileFrom.value.trim(),
+                        profession: profileProfession.value.trim(),
+                        photoURL: downloadURL,
+                        updatedAt: new Date().getTime()
+                    }, { merge: true });
+
+                    showToast("Profile pipeline updated!");
+                    profileModal.classList.add("hidden");
+                    selectedFile = null;
+
+                } catch (error) {
+                    console.error("Profile payload crash: ", error);
+                    showToast("Sync failed.");
+                } finally {
+                    profileSaveBtn.disabled = false;
+                    profileSaveBtn.innerText = "Save Profile";
+                }
+            });
+        }
 
         function showToast(msg) {
             const toast = document.getElementById("app-notification");

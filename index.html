@@ -89,7 +89,8 @@
         body {
             background-color: var(--bg-main);
             color: var(--text-main);
-            height: 100dvh;
+            height: 100vh;
+            height: calc(var(--vh, 1vh) * 100);
             overflow: hidden;
             display: flex;
             align-items: center;
@@ -227,7 +228,8 @@
         .app-container {
             display: flex;
             width: 100vw;
-            height: 100dvh;
+            height: 100vh;
+            height: calc(var(--vh, 1vh) * 100);
             background-color: var(--bg-main);
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -278,6 +280,7 @@
             font-size: 1.2rem;
             cursor: pointer;
             transition: color 0.3s;
+            flex-shrink: 0;
         }
 
         .icon-btn:hover { color: var(--pink-primary); }
@@ -529,20 +532,24 @@
         .status-tick.delivered { color: var(--status-delivered); }
         .status-tick.seen { color: var(--status-seen); }
 
+        /* DYNAMIC LAYOUT INBOX FORM FIXES */
         .message-input-area {
-            padding: 20px;
+            padding: 15px 20px;
             background: var(--bg-sidebar);
             border-top: 1px solid var(--glass-border);
             display: flex;
-            gap: 12px;
+            gap: 10px;
             align-items: center;
             flex-shrink: 0;
             position: relative;
+            width: 100%;
+            flex-wrap: nowrap !important;
         }
 
         .message-input-area input {
             flex: 1;
-            padding: 15px 20px;
+            min-width: 0;
+            padding: 14px 20px;
             background: var(--bg-card);
             border: 1px solid var(--glass-border);
             border-radius: 30px;
@@ -557,8 +564,8 @@
         }
 
         .send-btn {
-            width: 48px;
-            height: 48px;
+            width: 46px;
+            height: 46px;
             background: var(--pink-primary);
             border: none;
             border-radius: 50%;
@@ -570,7 +577,7 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 10px rgba(255, 0, 127, 0.3);
-            flex-shrink: 0; /* বাটন যেন মেসেজ টাইপ করার সময় চ্যাপ্টা না হয়ে যায় */
+            flex-shrink: 0 !important;
         }
 
         .send-btn:hover { transform: scale(1.05); background: var(--pink-hover); }
@@ -958,9 +965,31 @@
         // Custom Premium Global Audio Tracking Map
         window.activeAudioNodes = new Map();
 
+        /* ==================== GLOBAL REAL-TIME MOBILE VIEWPORT ENGINE ==================== */
+        function configureDynamicViewportMatrix() {
+            const updateViewportHeightValue = () => {
+                let vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', `${vh}px`);
+            };
+            
+            window.addEventListener('resize', updateViewportHeightValue);
+            window.addEventListener('orientationchange', updateViewportHeightValue);
+            
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', () => {
+                    updateViewportHeightValue();
+                    if(activeChatUserId) {
+                        setTimeout(() => { messagesDisplay.scrollTop = messagesDisplay.scrollHeight; }, 80);
+                    }
+                });
+                window.visualViewport.addEventListener('scroll', updateViewportHeightValue);
+            }
+            updateViewportHeightValue();
+        }
+        configureDynamicViewportMatrix();
+
         /* ==================== CORE THEME MANAGEMENT SYSTEM ==================== */
         function initAppThemesSystem() {
-            // 1. Web Global Themes Controller Logic
             const savedWebTheme = localStorage.getItem("mr_web_theme") || "default";
             applyWebThemeMode(savedWebTheme);
             updateDropdownActiveTick(webThemeDropdown, "data-theme-val", savedWebTheme);
@@ -982,7 +1011,6 @@
                 });
             });
 
-            // 2. Chat Box Private Background Theme Controller Logic
             const savedInboxTheme = localStorage.getItem("mr_inbox_theme") || "classic";
             messagesDisplay.setAttribute("data-inbox-theme", savedInboxTheme);
             updateDropdownActiveTick(inboxThemeDropdown, "data-inbox-val", savedInboxTheme);
@@ -1004,7 +1032,6 @@
                 });
             });
 
-            // Global Dismiss Node logic
             document.addEventListener("click", () => {
                 webThemeDropdown.classList.add("hidden");
                 inboxThemeDropdown.classList.add("hidden");
@@ -1030,7 +1057,6 @@
             });
         }
 
-        // Initialize themes system architecture immediately on execution context
         initAppThemesSystem();
 
         function getChatRoomId(uid1, uid2) {
@@ -1337,7 +1363,6 @@
             resetAttachmentQueue();
             gifPanel.classList.add("hidden");
 
-            // Shut down existing audios
             window.activeAudioNodes.forEach(node => { if(node.audio) node.audio.pause(); });
             window.activeAudioNodes.clear();
 
@@ -1396,7 +1421,6 @@
 
                 messagesDisplay.innerHTML = messagesHTML;
                 
-                // Initialize Custom Premium Audio Engine Triggers inside View
                 snapshot.forEach(doc => {
                     const msgData = doc.data();
                     if(msgData.voiceNotes) {
@@ -1446,7 +1470,6 @@
         });
 
         /* ==================== MEDIA ATTACHMENTS ARCHITECTURE ==================== */
-        
         function resetAttachmentQueue() {
             inboxSelectedBase64Image = null;
             inboxSelectedVoiceBase64 = null;
@@ -1463,7 +1486,7 @@
             const file = e.target.files[0];
             if (file) {
                 if (file.size > 1.5 * 1024 * 1024) {
-                    alert("Image exceeds 1.5MB size compression tier constraints.");
+                    alert("Image exceeds 1.5MB size compression constraints.");
                     resetAttachmentQueue();
                     return;
                 }
@@ -1480,7 +1503,6 @@
             }
         });
 
-        /* Premium Voice Core Recording Pipeline */
         inboxVoiceTriggerBtn.addEventListener("click", async () => {
             if (!isVoiceRecording) {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1535,7 +1557,6 @@
             resetAttachmentQueue();
         });
 
-        // Optimized Open-Source Gifs Loader Module
         inboxGifTriggerBtn.addEventListener("click", () => {
             gifPanel.classList.toggle("hidden");
             if(!gifPanel.classList.contains("hidden")) {
@@ -1548,7 +1569,6 @@
         async function loadTrendingGifs() {
             gifResults.innerHTML = "<p style='grid-column: span 3; text-align:center; font-size:0.8rem; color:var(--text-muted);'>Syncing GIFs...</p>";
             try {
-                // High performance open source anonymous mirror engine configuration
                 const res = await fetch(`https://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=12&rating=g`);
                 const json = await res.json();
                 renderGifs(json.data);
@@ -1595,7 +1615,6 @@
             };
         }
 
-        /* Message Dispatch Pipeline */
         messageForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             if (isVoiceRecording) {
@@ -1682,7 +1701,6 @@
             }
         }
 
-        /* HTML Generation Node Mapping */
         function getSingleMessageBubbleHTML(msgData, msgId) {
             const isSent = msgData.senderId === currentUser.uid;
             const rowClass = isSent ? "msg-row sent" : "msg-row received";
@@ -1710,7 +1728,6 @@
             } else if(msgData.gifUrl) {
                 mediaEmbedHTML = `<img src="${msgData.gifUrl}" class="msg-media-content" alt="GIF">`;
             } else if(msgData.voiceNotes) {
-                // UI Fix: Injection of Premium Customized Audio Elements Container
                 mediaEmbedHTML = `
                     <div class="premium-audio-player" id="player-container-${msgId}">
                         <button type="button" class="audio-control-btn" id="play-btn-${msgId}"><i class="fas fa-play"></i></button>
@@ -1739,7 +1756,6 @@
             `;
         }
 
-        /* Custom Audio Controller Instances Generator Engine */
         function initCustomAudioPlayerInstance(msgId, base64AudioData) {
             const playBtn = document.getElementById(`play-btn-${msgId}`);
             const track = document.getElementById(`track-${msgId}`);
@@ -1751,7 +1767,6 @@
             const audioObj = new Audio(base64AudioData);
             window.activeAudioNodes.set(msgId, { audio: audioObj, isPlaying: false });
 
-            // Render native length metadata
             audioObj.addEventListener("loadedmetadata", () => {
                 timeLabel.innerText = formatAudioDuration(audioObj.duration);
             });
@@ -1761,7 +1776,6 @@
                 if(state.isPlaying) {
                     audioObj.pause();
                 } else {
-                    // Turn down other active audios
                     window.activeAudioNodes.forEach((node, id) => {
                         if(id !== msgId && node.isPlaying) {
                             node.audio.pause();
@@ -1806,19 +1820,6 @@
             const m = Math.floor(secs / 60);
             const s = Math.floor(secs % 60);
             return `${m}:${s < 10 ? '0' : ''}${s}`;
-        }
-
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', () => {
-                const appContainerEl = document.getElementById("app-container");
-                if (appContainerEl) {
-                    appContainerEl.style.height = `${window.visualViewport.height}px`;
-                    appContainerEl.style.top = `${window.visualViewport.offsetTop}px`;
-                }
-                if(activeChatUserId) {
-                    setTimeout(() => { messagesDisplay.scrollTop = messagesDisplay.scrollHeight; }, 100);
-                }
-            });
         }
 
         if(backToSidebar) {

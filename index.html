@@ -801,7 +801,11 @@
         /* ==================== CALLING SYSTEM UI ==================== */
         .incoming-call-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            height: calc(var(--vh, 1vh) * 100);
             background: rgba(11, 12, 16, 0.95);
             z-index: 30000;
             display: flex;
@@ -810,6 +814,8 @@
             justify-content: center;
             gap: 15px;
             backdrop-filter: blur(10px);
+            padding-bottom: calc(env(safe-area-inset-bottom) + 20px);
+            overflow: hidden;
         }
         .incoming-call-avatar {
             width: 110px; height: 110px; border-radius: 50%;
@@ -821,6 +827,9 @@
         .incoming-call-type { color: var(--text-muted); font-size: 1rem; }
         .incoming-call-actions {
             display: flex; gap: 40px; margin-top: 30px;
+            margin-bottom: calc(20px + env(safe-area-inset-bottom));
+            flex-shrink: 0;
+            z-index: 10;
         }
         .call-action-btn {
             width: 70px; height: 70px; border-radius: 50%;
@@ -834,28 +843,68 @@
 
         .active-call-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
+            top: 0; left: 0; width: 100%;
+            height: 100vh;
+            height: 100dvh; /* Modern mobile browsers */
+            height: calc(var(--vh, 1vh) * 100);
             background: var(--bg-main);
             z-index: 30000;
             display: flex;
             flex-direction: column;
+            padding-bottom: 160px; /* Space for fixed control bar at bottom: 80px + ~80px height */
+            overflow: hidden;
         }
         .call-header-bar {
             padding: 18px;
             text-align: center;
             background: var(--bg-sidebar);
             border-bottom: 1px solid var(--glass-border);
+            flex-shrink: 0;
+            z-index: 2;
         }
         .call-header-bar h3 { font-size: 1.1rem; margin-bottom: 4px; }
         .call-timer { color: var(--pink-light); font-size: 0.9rem; font-weight: 600; }
-
-        .call-video-stage {
+        .call-status-text {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 4px;
+            animation: pulse-opacity 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-opacity {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .call-stage-wrapper {
             flex: 1;
             position: relative;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .call-control-bar {
+            position: fixed;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            padding: 16px 20px;
+            background: rgba(18, 19, 28, 0.95);
+            border-top: 2px solid var(--pink-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            z-index: 30001;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .call-video-stage {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             background: #000;
+            overflow: hidden;
         }
         #remote-video {
             width: 100%; height: 100%; object-fit: cover;
@@ -871,12 +920,13 @@
             z-index: 10;
         }
         .voice-avatar-stage {
-            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 20px;
+            width: 100%;
+            height: 100%;
         }
         .voice-avatar-stage img {
             width: 140px; height: 140px; border-radius: 50%;
@@ -901,17 +951,9 @@
             50% { transform: scaleY(1.8); }
         }
 
-        .call-control-bar {
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 25px;
-            background: var(--bg-sidebar);
-            border-top: 1px solid var(--glass-border);
-        }
+
         .call-end-btn {
-            width: 60px; height: 60px;
+            width: 64px; height: 64px;
             border-radius: 50%;
             background: #FF3B30;
             border: none;
@@ -920,10 +962,15 @@
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(255,59,48,0.4);
             transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
         }
         .call-end-btn:hover { transform: scale(1.05); }
+        .call-end-btn:active { transform: scale(0.95); }
         .call-mute-btn {
-            width: 50px; height: 50px;
+            width: 56px; height: 56px;
             border-radius: 50%;
             background: var(--bg-card);
             border: 1px solid var(--glass-border);
@@ -931,6 +978,10 @@
             font-size: 1.2rem;
             cursor: pointer;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
         }
         .call-mute-btn.muted {
             background: var(--pink-primary);
@@ -944,7 +995,12 @@
             .chat-main { display: none; width: 100%; }
             .chat-main.mobile-active { display: flex !important; }
             #back-to-sidebar { display: inline-block !important; }
-            #local-video { width: 80px; height: 110px; bottom: 80px; }
+            #local-video { width: 80px; height: 110px; bottom: 160px; right: 10px; }
+            .voice-avatar-stage img { width: 120px; height: 120px; }
+            .call-control-bar { gap: 20px; padding: 12px; bottom: 60px; }
+            .call-end-btn { width: 56px; height: 56px; }
+            .call-mute-btn { width: 48px; height: 48px; }
+            .active-call-overlay { padding-bottom: 140px; }
         }
 
         #back-to-sidebar { display: none; }
@@ -1190,14 +1246,17 @@
         <div class="call-header-bar">
             <h3 id="active-call-title">Voice Call</h3>
             <div class="call-timer" id="active-call-timer">00:00</div>
+            <div class="call-status-text hidden" id="active-call-status">Calling...</div>
         </div>
-        <div class="call-video-stage" id="call-video-stage">
-            <video id="remote-video" autoplay playsinline></video>
-            <video id="local-video" class="hidden" autoplay playsinline muted></video>
-            <div id="voice-only-avatar" class="voice-avatar-stage hidden">
-                <img id="call-avatar-img" src="https://via.placeholder.com/140">
-                <div class="call-wave">
-                    <span></span><span></span><span></span><span></span><span></span>
+        <div class="call-stage-wrapper" id="call-stage-wrapper">
+            <div class="call-video-stage" id="call-video-stage">
+                <video id="remote-video" autoplay playsinline></video>
+                <video id="local-video" class="hidden" autoplay playsinline muted></video>
+                <div id="voice-only-avatar" class="voice-avatar-stage hidden">
+                    <img id="call-avatar-img" src="https://via.placeholder.com/140">
+                    <div class="call-wave">
+                        <span></span><span></span><span></span><span></span><span></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3140,9 +3199,12 @@
                     return;
                 }
 
-                if (data.answer && !peerConnection.currentRemoteDescription) {
+                // When callee answers, update UI to connected state
+                if (data.status === 'connected' && data.answer && !peerConnection.currentRemoteDescription) {
                     const answer = new RTCSessionDescription(data.answer);
                     await peerConnection.setRemoteDescription(answer);
+                    // Switch from Calling... to timer
+                    showActiveCallUI(targetUid, 'connected', type);
                 }
             });
 
@@ -3296,6 +3358,10 @@
 
         // ==================== FIX: Proper ringtone management ====================
         async function showIncomingCallUI(callId, callData) {
+            // Force viewport recalculation for mobile browsers
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+
             try {
                 const callerDoc = await getDoc(doc(db, 'users', callData.callerId));
                 const callerName = callerDoc.exists() ? (callerDoc.data().fullName || callerDoc.data().username || 'Unknown') : 'Unknown';
@@ -3349,10 +3415,18 @@
         }
 
         function showActiveCallUI(targetId, status, type) {
+            // Force viewport recalculation for mobile browsers
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+
             activeCallOverlay.classList.remove('hidden');
+            // Force reflow to ensure grid layout calculates correctly
+            void activeCallOverlay.offsetHeight;
 
             const titleName = chatUserName.innerText || 'User';
             activeCallTitle.innerText = type === 'video' ? `Video Call with ${titleName}` : `Voice Call with ${titleName}`;
+
+            const callStatusEl = document.getElementById('active-call-status');
 
             if (type === 'video') {
                 localVideo.classList.remove('hidden');
@@ -3366,15 +3440,34 @@
                 callAvatarImg.src = chatUserAvatar.src;
             }
 
-            // Start timer
-            let seconds = 0;
-            activeCallTimer.innerText = "00:00";
-            callTimerInterval = setInterval(() => {
-                seconds++;
-                const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-                const s = (seconds % 60).toString().padStart(2, '0');
-                activeCallTimer.innerText = `${m}:${s}`;
-            }, 1000);
+            // Handle ringing vs connected states
+            if (status === 'outgoing' || status === 'ringing') {
+                // Caller is waiting for answer
+                activeCallTimer.classList.add('hidden');
+                if (callStatusEl) {
+                    callStatusEl.classList.remove('hidden');
+                    callStatusEl.innerText = status === 'outgoing' ? 'Calling...' : 'Ringing...';
+                }
+                // Pause wave animation during ringing
+                const waveSpans = document.querySelectorAll('.call-wave span');
+                waveSpans.forEach(span => span.style.animationPlayState = 'paused');
+            } else {
+                // Connected - start timer and wave animation
+                activeCallTimer.classList.remove('hidden');
+                if (callStatusEl) callStatusEl.classList.add('hidden');
+
+                const waveSpans = document.querySelectorAll('.call-wave span');
+                waveSpans.forEach(span => span.style.animationPlayState = 'running');
+
+                let seconds = 0;
+                activeCallTimer.innerText = "00:00";
+                callTimerInterval = setInterval(() => {
+                    seconds++;
+                    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+                    const s = (seconds % 60).toString().padStart(2, '0');
+                    activeCallTimer.innerText = `${m}:${s}`;
+                }, 1000);
+            }
         }
 
         function hideActiveCallUI() {
@@ -3385,6 +3478,15 @@
             voiceOnlyAvatar.classList.add('hidden');
             muteCallBtn.innerHTML = '<i class="fas fa-microphone"></i>';
             muteCallBtn.classList.remove("muted");
+            // Reset wave animation
+            const waveSpans = document.querySelectorAll('.call-wave span');
+            waveSpans.forEach(span => span.style.animationPlayState = 'running');
+            // Reset status text
+            const callStatusEl = document.getElementById('active-call-status');
+            if (callStatusEl) callStatusEl.classList.add('hidden');
+            activeCallTimer.classList.remove('hidden');
+            // Ensure body scroll is restored if needed
+            document.body.style.overflow = 'hidden';
         }
 
     </script>

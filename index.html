@@ -546,12 +546,16 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            min-width: 220px;
-            padding: 6px 0;
-            color: #fff;
+            min-width: 200px;
+            max-width: 260px;
+            padding: 4px 0;
         }
 
-        .audio-control-btn {
+        /* Sent bubble (pink gradient) - white UI */
+        .sent .premium-audio-player {
+            color: #fff;
+        }
+        .sent .audio-control-btn {
             width: 34px;
             height: 34px;
             border-radius: 50%;
@@ -563,34 +567,86 @@
             justify-content: center;
             cursor: pointer;
             font-size: 0.9rem;
-            transition: background 0.2s;
+            transition: all 0.2s;
+            flex-shrink: 0;
         }
-        .audio-control-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
+        .sent .audio-control-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: scale(1.08);
         }
-
-        .audio-timeline-track {
+        .sent .audio-timeline-track {
             flex: 1;
             height: 4px;
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.3);
             border-radius: 2px;
             position: relative;
             cursor: pointer;
+            overflow: hidden;
         }
-
-        .audio-timeline-fill {
+        .sent .audio-timeline-fill {
             height: 100%;
             width: 0%;
             background: #fff;
             border-radius: 2px;
             position: absolute;
             top: 0; left: 0;
+            transition: width 0.1s linear;
+        }
+        .sent .audio-time-stamp {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-variant-numeric: tabular-nums;
+            min-width: 36px;
+            text-align: right;
         }
 
-        .audio-time-stamp {
+        /* Received bubble (card bg) - theme-aware UI */
+        .received .premium-audio-player {
+            color: var(--text-main);
+        }
+        .received .audio-control-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.08);
+            border: none;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .received .audio-control-btn:hover {
+            background: rgba(0, 0, 0, 0.15);
+            transform: scale(1.08);
+        }
+        .received .audio-timeline-track {
+            flex: 1;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.12);
+            border-radius: 2px;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        .received .audio-timeline-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--pink-primary);
+            border-radius: 2px;
+            position: absolute;
+            top: 0; left: 0;
+            transition: width 0.1s linear;
+        }
+        .received .audio-time-stamp {
             font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.8);
+            color: var(--text-muted);
             font-variant-numeric: tabular-nums;
+            min-width: 36px;
+            text-align: right;
         }
 
         .msg-meta-wrapper {
@@ -3072,7 +3128,7 @@ let selectedCoverFile = null;
             } else if(msgData.voiceNotes) {
                 mediaEmbedHTML = `
                     <div class="premium-audio-player" id="player-container-${msgId}">
-                        <button type="button" class="audio-control-btn" id="play-btn-${msgId}"><i class="fas fa-play"></i></button>
+                        <button type="button" class="audio-control-btn" id="play-btn-${msgId}" aria-label="Play voice message"><i class="fas fa-play"></i></button>
                         <div class="audio-timeline-track" id="track-${msgId}">
                             <div class="audio-timeline-fill" id="fill-${msgId}"></div>
                         </div>
@@ -3445,8 +3501,10 @@ let selectedCoverFile = null;
                     rewardXpToCurrentUser(40);
                     profileModal.classList.add("hidden");
                     selectedFile = null;
+                    selectedCoverFile = null;
                 } catch (error) {
                     showToast("Sync failed.");
+                    console.error("Profile save error:", error);
                 } finally {
                     profileSaveBtn.disabled = false;
                     profileSaveBtn.innerText = "Save Profile";
@@ -3795,7 +3853,38 @@ async function openSocialProfile(targetUid = null) {
         modal.classList.add('hidden');
         const player = document.getElementById('profile-music-player');
         if (player) player.pause();
-        openProfileBtn.click();
+        // Open edit modal directly
+        setProfileModalMode(false);
+        profileModal.classList.remove('hidden');
+        // Load current user data into edit form
+        getDoc(doc(db, "users", currentUser.uid)).then(snap => {
+            if (snap.exists()) {
+                const u = snap.data();
+                profileName.value = u.fullName || currentUser.displayName || "";
+                profileAge.value = u.age || "";
+                profileFrom.value = u.from || "";
+                profileProfession.value = u.profession || "";
+                modalPreviewAvatar.src = u.photoURL || currentUser.photoURL || "https://via.placeholder.com/90";
+                document.getElementById('profile-bio').value = u.bio || "";
+                document.getElementById('profile-frame').value = u.profileFrame || "none";
+                document.getElementById('profile-border').value = u.avatarBorder || "none";
+                document.getElementById('profile-theme').value = u.profileTheme || "blackpink";
+                document.getElementById('profile-music').value = u.profileMusic || "";
+                document.getElementById('profile-font').value = u.fontStyle || "default";
+                const bioWords = (u.bio || "").trim().split(/\s+/).filter(w => w.length > 0).length;
+                const wcEl = document.getElementById('bio-word-count');
+                if (wcEl) wcEl.innerText = bioWords;
+                const coverContainer = document.getElementById('cover-preview-container');
+                const coverPlaceholder = document.getElementById('cover-placeholder-text');
+                if (coverContainer && u.coverPhoto) {
+                    coverContainer.style.backgroundImage = `url('${u.coverPhoto}')`;
+                    if (coverPlaceholder) coverPlaceholder.style.display = 'none';
+                } else if (coverContainer) {
+                    coverContainer.style.backgroundImage = '';
+                    if (coverPlaceholder) coverPlaceholder.style.display = 'block';
+                }
+            }
+        }).catch(() => {});
     };
     diceBtn.onclick = () => {
         modal.classList.add('hidden');

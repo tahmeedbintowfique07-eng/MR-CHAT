@@ -16,6 +16,9 @@
                 document.documentElement.setAttribute("data-theme", savedTheme);
             }
         })();
+    window.openSocialProfile = openSocialProfile;
+    window.loadGoldLeaderboard = loadGoldLeaderboard;
+    window.loadLevelLeaderboard = loadLevelLeaderboard;
     </script>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -1041,8 +1044,8 @@
 .profile-theme-fire { background: linear-gradient(180deg, #1a0500 0%, #331100 100%); border: 1px solid #FF4500; }
 
 /* --- Social Profile Card --- */
-.social-profile-card { position: relative; width: 100%; max-width: 480px; border-radius: 24px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 20px 60px rgba(0,0,0,0.5); transition: all 0.3s ease; }
-.profile-banner { height: 140px; background: linear-gradient(135deg, var(--pink-primary), #FF0055); position: relative; }
+.social-profile-card { position: relative; width: 100%; max-width: 480px; border-radius: 24px; overflow-y: auto; max-height: 90vh; border: 1px solid var(--glass-border); box-shadow: 0 20px 60px rgba(0,0,0,0.5); transition: all 0.3s ease; }
+.profile-banner { height: 140px; background: linear-gradient(135deg, var(--pink-primary), #FF0055); position: relative; background-size: cover; background-position: center; }
 .profile-avatar-wrapper { position: relative; width: 110px; height: 110px; margin: -55px auto 0; z-index: 5; }
 .profile-avatar-wrapper img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid var(--bg-sidebar); position: relative; z-index: 2; }
 #social-avatar-border { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; height: 100%; z-index: 3; }
@@ -1066,7 +1069,7 @@
 .profile-actions-row { display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap; }
 
 /* --- Dice Game --- */
-.dice-game-card { background: var(--bg-sidebar); border: 1px solid var(--glass-border); border-radius: 24px; padding: 30px; width: 100%; max-width: 400px; position: relative; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.dice-game-card { background: var(--bg-sidebar); border: 1px solid var(--glass-border); border-radius: 24px; padding: 30px; width: 100%; max-width: 400px; position: relative; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; }
 .gold-display-bar { font-size: 1.1rem; font-weight: 600; color: #FFD700; margin-bottom: 15px; padding: 10px; background: rgba(255,215,0,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .bet-selection { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
 .bet-btn { padding: 8px 16px; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--bg-card); color: var(--text-main); font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; }
@@ -1084,6 +1087,11 @@
 .input-group select, .input-group textarea { width: 100%; padding: 15px 15px 15px 45px; background: var(--bg-card); border: 1px solid transparent; border-radius: 12px; color: var(--text-main); font-size: 0.95rem; transition: all 0.3s; appearance: none; font-family: 'Inter', sans-serif; }
 .input-group select:focus, .input-group textarea:focus { border-color: var(--pink-primary); outline: none; box-shadow: 0 0 10px rgba(255, 0, 127, 0.2); }
 .input-group textarea { min-height: 80px; resize: vertical; padding-top: 12px; }
+
+
+/* Leaderboard minimal styles */
+.leaderboard-row { display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--glass-border); transition: transform 0.15s; }
+.leaderboard-row:hover { transform: scale(1.01); border-color: var(--pink-primary); }
 
 </style>
 </head>
@@ -1125,7 +1133,7 @@
         <div class="sidebar" id="app-sidebar">
             <div class="sidebar-header">
                 <div class="user-profile">
-                    <img id="current-user-avatar" src="https://via.placeholder.com/40" class="avatar" alt="Avatar">
+                    <img id="current-user-avatar" src="https://via.placeholder.com/40" class="avatar" alt="Avatar" style="cursor: pointer;" title="View Profile">
                     <div style="display: flex; flex-direction: column; width: 100%;">
                         <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
                             <span id="current-user-name" style="max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Loading...</span>
@@ -1148,6 +1156,7 @@
                             <div class="dropdown-item" data-theme-val="default"><i class="fas fa-desktop"></i> System Default</div>
                         </div>
                     </div>
+                    <button id="open-games-btn" class="icon-btn" title="Games"><i class="fas fa-gamepad"></i></button>
                     <button id="open-profile-btn" class="icon-btn"><i class="fas fa-user-gear"></i></button>
                     <button id="logout-btn" class="icon-btn"><i class="fas fa-arrow-right-from-bracket"></i></button>
                 </div>
@@ -1277,8 +1286,8 @@
         </div>
     </div>
 
-    <div id="profile-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
-        <div class="auth-box" style="position: relative; max-width: 420px; width: 100%;">
+    <div id="profile-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: flex; align-items: flex-start; justify-content: center; z-index: 10000; padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+        <div class="auth-box" style="position: relative; max-width: 420px; width: 100%; max-height: 90vh; overflow-y: auto; margin-top: 20px; margin-bottom: 20px;">
             <button id="close-profile-btn-x" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;"><i class="fas fa-times"></i></button>
             <div class="auth-header">
                 <h2 id="modal-title">Edit Profile</h2>
@@ -1289,6 +1298,13 @@
                     <img id="modal-preview-avatar" src="https://via.placeholder.com/90" style="width: 90px; height: 90px; border-radius: 50%; border: 2px solid var(--pink-primary); object-fit: cover;">
                     <label id="upload-dp-label" for="profile-dp-input" class="action-btn-sm btn-pink" style="cursor: pointer; display: inline-block; padding: 8px 15px;"><i class="fas fa-camera"></i> Select Photo</label>
                     <input type="file" id="profile-dp-input" accept="image/*" class="hidden">
+                </div>
+                <div style="margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                    <div id="cover-preview-container" style="width: 100%; height: 100px; border-radius: 12px; background: var(--bg-card); background-size: cover; background-position: center; border: 1px solid var(--glass-border); position: relative;">
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--text-muted); font-size: 0.8rem;" id="cover-placeholder-text">No cover photo</div>
+                    </div>
+                    <label for="profile-cover-input" class="action-btn-sm btn-pink" style="cursor: pointer; display: inline-block; padding: 8px 15px;"><i class="fas fa-image"></i> Select Cover Photo</label>
+                    <input type="file" id="profile-cover-input" accept="image/*" class="hidden">
                 </div>
 
                 <div class="input-group">
@@ -1309,7 +1325,10 @@
                 </div>
                 <div class="input-group">
                     <i class="fas fa-align-left"></i>
-                    <textarea id="profile-bio" placeholder="Bio (max 200 characters)" maxlength="200"></textarea>
+                    <textarea id="profile-bio" placeholder="Bio (up to 200 words)"></textarea>
+                </div>
+                <div style="text-align: right; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; padding-right: 5px;">
+                    <span id="bio-word-count">0</span> / 200 words
                 </div>
                 <div class="input-group">
                     <i class="fas fa-border-all"></i>
@@ -1399,7 +1418,130 @@
 
     <div id="app-notification" class="toast hidden"></div>
 
-    <script type="module">
+    
+<!-- ==================== NEW: SOCIAL PROFILE MODAL ==================== -->
+<div id="social-profile-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); display: flex; align-items: flex-start; justify-content: center; z-index: 10001; padding: 20px; overflow-y: auto; backdrop-filter: blur(10px); -webkit-overflow-scrolling: touch;">
+    <div class="social-profile-card" id="social-profile-card" style="margin-top: 20px; margin-bottom: 20px;">
+        <div class="profile-banner"></div>
+        <div class="profile-avatar-wrapper">
+            <img id="social-profile-avatar" src="https://via.placeholder.com/110" class="avatar" alt="Profile">
+            <div class="avatar-border-overlay" id="social-avatar-border"></div>
+            <div class="profile-frame-overlay" id="social-profile-frame"></div>
+        </div>
+        <div class="profile-info-section">
+            <h2 id="social-profile-name" style="font-size: 1.4rem; font-weight: 700;">User</h2>
+            <div id="social-profile-badges" class="badges-row"></div>
+            <p id="social-profile-bio" class="profile-bio-text">No bio yet.</p>
+            <div class="profile-stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="stat-box"><span id="stat-friends">0</span><label>Friends</label></div>
+                <div class="stat-box"><span id="stat-rooms">0</span><label>Rooms Joined</label></div>
+            </div>
+            <div class="gold-balance-display">
+                <i class="fas fa-coins"></i>
+                <span id="social-profile-gold">0</span> Gold
+            </div>
+            <div class="account-meta">
+                <span id="social-profile-created">Joined recently</span>
+            </div>
+            <div id="profile-music-container" class="hidden" style="margin: 10px 0;">
+                <audio id="profile-music-player" loop></audio>
+                <button id="profile-music-toggle" class="action-btn-sm btn-pink"><i class="fas fa-music"></i> Play Profile Music</button>
+            </div>
+            <div class="profile-actions-row">
+                <button id="edit-profile-from-view" class="action-btn-sm btn-pink"><i class="fas fa-pen"></i> Edit Profile</button>
+            </div>
+        </div>
+        <div class="dropdown-wrapper" style="position: absolute; top: 20px; right: 62px; z-index: 10;">
+                <button id="profile-menu-trigger" class="icon-btn" style="background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%;"><i class="fas fa-ellipsis-v"></i></button>
+                <div id="profile-menu-dropdown" class="custom-theme-dropdown hidden" style="right: 0; left: auto; min-width: 180px;">
+                    <div class="dropdown-item" id="menu-gold-leaderboard"><i class="fas fa-coins" style="color: #FFD700;"></i> Gold Leaderboard</div>
+                    <div class="dropdown-item" id="menu-level-leaderboard"><i class="fas fa-trophy" style="color: var(--pink-primary);"></i> Level Leaderboard</div>
+                </div>
+            </div>
+            <button id="close-social-profile" class="icon-btn" style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%;"><i class="fas fa-times"></i></button>
+    </div>
+</div>
+
+<!-- ==================== NEW: DICE GAME MODAL ==================== -->
+<div id="dice-game-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; z-index: 10002; padding: 20px; backdrop-filter: blur(10px);">
+    <div class="dice-game-card">
+        <h2 style="margin-bottom: 5px;"><i class="fas fa-dice" style="color: var(--pink-primary);"></i> Dice Arena</h2>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Test your luck. Win big.</p>
+        <div class="gold-display-bar">
+            <i class="fas fa-coins"></i>
+            <span id="dice-gold-balance">0</span> Gold
+        </div>
+        <div class="bet-selection">
+            <button class="bet-btn selected" data-bet="100">100</button>
+            <button class="bet-btn" data-bet="500">500</button>
+            <button class="bet-btn" data-bet="1000">1K</button>
+            <button class="bet-btn" data-bet="5000">5K</button>
+        </div>
+        <div class="dice-stage">
+            <div class="dice" id="dice-1"><div class="dice-face">?</div></div>
+        </div>
+        <div class="dice-result" id="dice-result" style="color: var(--text-muted);">Select your bet and roll!</div>
+        <button id="roll-dice-btn" class="main-btn" style="margin-top: 15px; max-width: 200px; margin-left: auto; margin-right: auto;">ROLL DICE</button>
+        <div class="dice-history" id="dice-history">
+            <p style="text-align:center; opacity:0.5; padding: 10px;">No games yet</p>
+        </div>
+        <button id="close-dice-btn" class="icon-btn" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%;"><i class="fas fa-times"></i></button>
+    </div>
+</div>
+
+
+<!-- ==================== GAMES SECTION MODAL ==================== -->
+<div id="games-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; z-index: 10003; padding: 20px; backdrop-filter: blur(10px); overflow-y: auto;">
+    <div class="auth-box" style="position: relative; max-width: 420px; width: 100%; max-height: 90vh; overflow-y: auto;">
+        <button id="close-games-btn" class="icon-btn" style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%;"><i class="fas fa-times"></i></button>
+        <div class="auth-header">
+            <h2><i class="fas fa-gamepad" style="color: var(--pink-primary);"></i> Games Arena</h2>
+            <p style="color: var(--text-muted)">Play, win, and climb the ranks.</p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 10px;">
+            <div style="background: var(--bg-card); border-radius: 16px; padding: 20px; border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.2s;" id="games-dice-card" onmouseover="this.style.borderColor='var(--pink-primary)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, var(--pink-primary), #FF0055); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;"><i class="fas fa-dice" style="color: white;"></i></div>
+                    <div style="flex: 1;">
+                        <h3 style="font-size: 1rem; margin-bottom: 4px;">Dice Arena</h3>
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">Roll the dice. Bet your Gold. Win big.</p>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color: var(--text-muted);"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== GOLD LEADERBOARD MODAL ==================== -->
+<div id="gold-leaderboard-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; z-index: 10004; padding: 20px; backdrop-filter: blur(10px); overflow-y: auto;">
+    <div class="auth-box" style="position: relative; max-width: 420px; width: 100%; max-height: 90vh; overflow-y: auto;">
+        <button id="close-gold-leaderboard" class="icon-btn" style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%;"><i class="fas fa-times"></i></button>
+        <div class="auth-header">
+            <h2><i class="fas fa-coins" style="color: #FFD700;"></i> Gold Leaderboard</h2>
+            <p style="color: var(--text-muted)">Richest users in the network.</p>
+        </div>
+        <div id="gold-leaderboard-list" style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+            <p style="text-align: center; color: var(--text-muted); padding: 20px;">Loading...</p>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== LEVEL LEADERBOARD MODAL ==================== -->
+<div id="level-leaderboard-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; z-index: 10004; padding: 20px; backdrop-filter: blur(10px); overflow-y: auto;">
+    <div class="auth-box" style="position: relative; max-width: 420px; width: 100%; max-height: 90vh; overflow-y: auto;">
+        <button id="close-level-leaderboard" class="icon-btn" style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%;"><i class="fas fa-times"></i></button>
+        <div class="auth-header">
+            <h2><i class="fas fa-trophy" style="color: var(--pink-primary);"></i> Level Leaderboard</h2>
+            <p style="color: var(--text-muted)">Most experienced users.</p>
+        </div>
+        <div id="level-leaderboard-list" style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+            <p style="text-align: center; color: var(--text-muted); padding: 20px;">Loading...</p>
+        </div>
+    </div>
+</div>
+
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, collection, query, where, or, orderBy, onSnapshot, addDoc, getDocs, updateDoc, deleteDoc, getDoc, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -1549,6 +1691,7 @@ let goldEarnInterval = null;
 let selectedDiceBet = 100;
 let currentProfileMusic = null;
 let joinedRoomsThisSession = new Set();
+let selectedCoverFile = null;
 
 
         window.activeAudioNodes = new Map();
@@ -1832,6 +1975,7 @@ let joinedRoomsThisSession = new Set();
                         currentUserRole = uData.role || "user"; 
                         document.getElementById("current-user-name").innerText = uData.fullName || uData.username || user.displayName || "User";
                         document.getElementById("current-user-avatar").src = uData.photoURL || user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.displayName}`;
+                        document.getElementById("current-user-avatar").onclick = () => openSocialProfile();
 
                         updateSidebarGamificationUI(uData);
                         updateSidebarGoldDisplay(uData.gold || 0);
@@ -1849,11 +1993,14 @@ let joinedRoomsThisSession = new Set();
                 listenGlobalIncomingMessagesForNotification();
                 initMessageActionListeners();
                 listenForIncomingCalls();
+                setupGamesModal();
+                setupLeaderboardModals();
             } else {
                 currentUser = null;
                 appContainer.classList.add("hidden");
                 authContainer.classList.remove("hidden");
                 if (unsubscribeIncomingCalls) { unsubscribeIncomingCalls(); unsubscribeIncomingCalls = null; }
+                if (goldEarnInterval) { clearInterval(goldEarnInterval); goldEarnInterval = null; }
                 endCallCleanup();
             }
         });
@@ -2231,6 +2378,7 @@ let joinedRoomsThisSession = new Set();
                 });
                 showToast("Request pushed!");
                 rewardXpToCurrentUser(15);
+                earnGold(25, 'friend_invite');
                 loadGlobalUsersExplore();
             } catch(e) { alert(e.message); }
         };
@@ -3139,6 +3287,20 @@ let joinedRoomsThisSession = new Set();
                         document.getElementById('profile-theme').value = userData.profileTheme || "blackpink";
                         document.getElementById('profile-music').value = userData.profileMusic || "";
                         document.getElementById('profile-font').value = userData.fontStyle || "default";
+                        // Update word count display
+                        const bioWords = (userData.bio || "").trim().split(/\s+/).filter(w => w.length > 0).length;
+                        const wcEl = document.getElementById('bio-word-count');
+                        if (wcEl) wcEl.innerText = bioWords;
+                        // Load cover photo preview
+                        const coverContainer = document.getElementById('cover-preview-container');
+                        const coverPlaceholder = document.getElementById('cover-placeholder-text');
+                        if (coverContainer && userData.coverPhoto) {
+                            coverContainer.style.backgroundImage = `url('${userData.coverPhoto}')`;
+                            if (coverPlaceholder) coverPlaceholder.style.display = 'none';
+                        } else if (coverContainer) {
+                            coverContainer.style.backgroundImage = '';
+                            if (coverPlaceholder) coverPlaceholder.style.display = 'block';
+                        }
                     }
                 } catch (e) {}
             });
@@ -3170,7 +3332,42 @@ let joinedRoomsThisSession = new Set();
             });
         }
 
+        let selectedCoverFile = null;
+        const profileCoverInput = document.getElementById('profile-cover-input');
+        if (profileCoverInput) {
+            profileCoverInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 2 * 1024 * 1024) {
+                        alert('Cover photo must be under 2MB.');
+                        return;
+                    }
+                    selectedCoverFile = file;
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const container = document.getElementById('cover-preview-container');
+                        const placeholder = document.getElementById('cover-placeholder-text');
+                        if (container) {
+                            container.style.backgroundImage = `url('${event.target.result}')`;
+                            if (placeholder) placeholder.style.display = 'none';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
         // ==================== FIX: Profile update preserves username and handles photoURL correctly ====================
+        if (document.getElementById('profile-bio')) {
+            document.getElementById('profile-bio').addEventListener('input', function() {
+                const count = this.value.trim().split(/\s+/).filter(w => w.length > 0).length;
+                const el = document.getElementById('bio-word-count');
+                if (el) {
+                    el.innerText = count;
+                    el.style.color = count > 200 ? '#FF3B30' : 'var(--text-muted)';
+                }
+            });
+        }
         if (profileUpdateForm) {
             profileUpdateForm.addEventListener("submit", async (e) => {
                 e.preventDefault();
@@ -3210,6 +3407,22 @@ let joinedRoomsThisSession = new Set();
                     } catch(authErr) {}
 
                     // FIX: Use merge and preserve existing fields like username
+                    let coverPhotoURL = null;
+                    if (selectedCoverFile) {
+                        if (selectedCoverFile.size > 2 * 1024 * 1024) {
+                            alert("Cover photo must be under 2MB.");
+                            profileSaveBtn.disabled = false;
+                            profileSaveBtn.innerText = "Save Profile";
+                            return;
+                        }
+                        coverPhotoURL = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.readAsDataURL(selectedCoverFile);
+                            reader.onload = () => resolve(reader.result);
+                            reader.onerror = (error) => reject(error);
+                        });
+                    }
+
                     await setDoc(doc(db, "users", currentUser.uid), {
                         fullName: profileName.value.trim(),
                         age: Number(profileAge.value),
@@ -3217,12 +3430,16 @@ let joinedRoomsThisSession = new Set();
                         profession: profileProfession.value.trim(),
                         photoURL: downloadURL,
                         updatedAt: new Date().getTime(),
-                        bio: document.getElementById('profile-bio').value.trim().substring(0, 200),
+                        bio: (() => {
+                            const words = document.getElementById('profile-bio').value.trim().split(/\s+/).filter(w => w.length > 0);
+                            return words.slice(0, 200).join(' ');
+                        })(),
                         profileFrame: document.getElementById('profile-frame').value,
                         avatarBorder: document.getElementById('profile-border').value,
                         profileTheme: document.getElementById('profile-theme').value,
                         profileMusic: document.getElementById('profile-music').value.trim(),
-                        fontStyle: document.getElementById('profile-font').value
+                        fontStyle: document.getElementById('profile-font').value,
+                        ...(coverPhotoURL ? { coverPhoto: coverPhotoURL } : {})
                     }, { merge: true }); // merge:true preserves username and other fields
 
                     showToast("Profile pipeline updated!");
@@ -3259,6 +3476,18 @@ let joinedRoomsThisSession = new Set();
                 const diceModal = document.getElementById('dice-game-modal');
                 if (diceModal && !diceModal.classList.contains("hidden")) {
                     diceModal.classList.add("hidden");
+                }
+                const gamesModal = document.getElementById('games-modal');
+                if (gamesModal && !gamesModal.classList.contains("hidden")) {
+                    gamesModal.classList.add("hidden");
+                }
+                const goldLb = document.getElementById('gold-leaderboard-modal');
+                if (goldLb && !goldLb.classList.contains("hidden")) {
+                    goldLb.classList.add("hidden");
+                }
+                const levelLb = document.getElementById('level-leaderboard-modal');
+                if (levelLb && !levelLb.classList.contains("hidden")) {
+                    levelLb.classList.add("hidden");
                 }
             }
         });
@@ -3324,9 +3553,11 @@ async function earnGold(amount, reason) {
     if (!currentUser) return;
     const userRef = doc(db, "users", currentUser.uid);
     try {
-        await updateDoc(userRef, { gold: increment(amount) });
         const snap = await getDoc(userRef);
-        updateSidebarGoldDisplay(snap.data().gold || 0);
+        if (!snap.exists()) return;
+        const currentGold = snap.data().gold || 0;
+        await updateDoc(userRef, { gold: increment(amount) });
+        updateSidebarGoldDisplay(currentGold + amount);
     } catch(e) { console.error("Gold earn error:", e); }
 }
 
@@ -3466,8 +3697,9 @@ async function openSocialProfile(targetUid = null) {
     const uid = targetUid || (currentUser ? currentUser.uid : null);
     if (!uid) return;
     const isOwnProfile = uid === (currentUser ? currentUser.uid : null);
-    const snap = await getDoc(doc(db, "users", uid));
-    if (!snap.exists()) return;
+    let snap;
+    try { snap = await getDoc(doc(db, "users", uid)); } catch(e) { return; }
+    if (!snap || !snap.exists()) return;
     const data = snap.data();
 
     const modal = document.getElementById('social-profile-modal');
@@ -3488,13 +3720,47 @@ async function openSocialProfile(targetUid = null) {
 
     document.getElementById('stat-friends').innerText = data.friendsCount || 0;
     document.getElementById('stat-rooms').innerText = data.roomsJoined || 0;
-    document.getElementById('stat-messages').innerText = data.messagesSent || 0;
-    document.getElementById('stat-calls').innerText = (data.voiceCallHours || 0).toFixed(1);
 
     document.getElementById('social-profile-gold').innerText = (data.gold || 0).toLocaleString();
 
     const created = data.accountCreated ? new Date(data.accountCreated).toLocaleDateString() : 'Unknown';
     document.getElementById('social-profile-created').innerText = `Joined ${created}`;
+
+    const bannerEl = document.querySelector('#social-profile-card .profile-banner');
+    if (bannerEl) {
+        if (data.coverPhoto) {
+            bannerEl.style.background = `url('${data.coverPhoto}') center/cover no-repeat`;
+        } else {
+            bannerEl.style.background = 'linear-gradient(135deg, var(--pink-primary), #FF0055)';
+        }
+    }
+
+    // Profile 3-dot menu dropdown
+    const menuTrigger = document.getElementById('profile-menu-trigger');
+    const menuDropdown = document.getElementById('profile-menu-dropdown');
+    if (menuTrigger && menuDropdown) {
+        menuTrigger.onclick = (e) => {
+            e.stopPropagation();
+            menuDropdown.classList.toggle('hidden');
+        };
+        document.getElementById('menu-gold-leaderboard').onclick = () => {
+            menuDropdown.classList.add('hidden');
+            modal.classList.add('hidden');
+            const player = document.getElementById('profile-music-player');
+            if (player) player.pause();
+            loadGoldLeaderboard();
+            document.getElementById('gold-leaderboard-modal').classList.remove('hidden');
+        };
+        document.getElementById('menu-level-leaderboard').onclick = () => {
+            menuDropdown.classList.add('hidden');
+            modal.classList.add('hidden');
+            const player = document.getElementById('profile-music-player');
+            if (player) player.pause();
+            loadLevelLeaderboard();
+            document.getElementById('level-leaderboard-modal').classList.remove('hidden');
+        };
+        document.addEventListener('click', () => menuDropdown.classList.add('hidden'));
+    }
 
     const musicContainer = document.getElementById('profile-music-container');
     const musicPlayer = document.getElementById('profile-music-player');
@@ -3643,18 +3909,130 @@ async function playDiceGame() {
 }
 
 // Dice Game Event Listeners (setup once)
-document.querySelectorAll('.bet-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        selectedDiceBet = parseInt(btn.dataset.bet);
+function setupDiceGameListeners() {
+    const betBtns = document.querySelectorAll('.bet-btn');
+    const rollBtn = document.getElementById('roll-dice-btn');
+    const closeBtn = document.getElementById('close-dice-btn');
+    if (!betBtns.length || !rollBtn || !closeBtn) {
+        console.warn('Dice game elements not found yet, retrying...');
+        setTimeout(setupDiceGameListeners, 100);
+        return;
+    }
+    betBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            betBtns.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedDiceBet = parseInt(btn.dataset.bet);
+        });
     });
-});
-document.getElementById('roll-dice-btn').addEventListener('click', playDiceGame);
-document.getElementById('close-dice-btn').addEventListener('click', () => {
-    document.getElementById('dice-game-modal').classList.add('hidden');
-});
+    rollBtn.addEventListener('click', playDiceGame);
+    closeBtn.addEventListener('click', () => {
+        document.getElementById('dice-game-modal').classList.add('hidden');
+    });
+}
+setupDiceGameListeners();
 
+
+
+// ==================== GAMES & LEADERBOARD SYSTEM ====================
+
+function setupGamesModal() {
+    const openGamesBtn = document.getElementById('open-games-btn');
+    const gamesModal = document.getElementById('games-modal');
+    const closeGamesBtn = document.getElementById('close-games-btn');
+    const diceCard = document.getElementById('games-dice-card');
+
+    if (openGamesBtn && gamesModal) {
+        openGamesBtn.addEventListener('click', () => {
+            gamesModal.classList.remove('hidden');
+        });
+    }
+    if (closeGamesBtn && gamesModal) {
+        closeGamesBtn.addEventListener('click', () => gamesModal.classList.add('hidden'));
+    }
+    if (diceCard) {
+        diceCard.addEventListener('click', () => {
+            if (gamesModal) gamesModal.classList.add('hidden');
+            document.getElementById('dice-game-modal').classList.remove('hidden');
+            loadDiceGame();
+        });
+    }
+}
+
+function setupLeaderboardModals() {
+    document.getElementById('close-gold-leaderboard').addEventListener('click', () => {
+        document.getElementById('gold-leaderboard-modal').classList.add('hidden');
+    });
+    document.getElementById('close-level-leaderboard').addEventListener('click', () => {
+        document.getElementById('level-leaderboard-modal').classList.add('hidden');
+    });
+}
+
+async function loadGoldLeaderboard() {
+    const container = document.getElementById('gold-leaderboard-list');
+    container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">Loading...</p>';
+    try {
+        const snap = await getDocs(collection(db, "users"));
+        let users = [];
+        snap.forEach(d => users.push(d.data()));
+        users.sort((a, b) => (b.gold || 0) - (a.gold || 0));
+        users = users.slice(0, 20);
+
+        let html = "";
+        users.forEach((u, idx) => {
+            const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
+            html += `
+                <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--glass-border);">
+                    <div style="font-size: 1.2rem; font-weight: 700; width: 36px; text-align: center; color: var(--pink-primary);">${medal}</div>
+                    <img src="${u.photoURL || 'https://via.placeholder.com/40'}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pink-primary);">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${u.fullName || u.username || 'User'}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Lv.${u.level || 1}</div>
+                    </div>
+                    <div style="font-weight: 700; color: #FFD700; font-size: 0.9rem;">${(u.gold || 0).toLocaleString()} <i class="fas fa-coins" style="font-size: 0.7rem;"></i></div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    } catch(e) {
+        container.innerHTML = '<p style="text-align: center; color: #FF3B30; padding: 20px;">Failed to load leaderboard.</p>';
+    }
+}
+
+async function loadLevelLeaderboard() {
+    const container = document.getElementById('level-leaderboard-list');
+    container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">Loading...</p>';
+    try {
+        const snap = await getDocs(collection(db, "users"));
+        let users = [];
+        snap.forEach(d => users.push(d.data()));
+        users.sort((a, b) => (b.level || 1) - (a.level || 1) || (b.xp || 0) - (a.xp || 0));
+        users = users.slice(0, 20);
+
+        let html = "";
+        users.forEach((u, idx) => {
+            const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
+            const badge = getUserBadgeType(u.level || 1);
+            html += `
+                <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--glass-border);">
+                    <div style="font-size: 1.2rem; font-weight: 700; width: 36px; text-align: center; color: var(--pink-primary);">${medal}</div>
+                    <img src="${u.photoURL || 'https://via.placeholder.com/40'}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pink-primary);">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${u.fullName || u.username || 'User'}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">${(u.xp || 0)}/${calculateRequiredXpForLevel(u.level || 1)} XP</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-weight: 700; color: var(--pink-light); font-size: 0.9rem;">Lv.${u.level || 1}</span>
+                        <span class="badge-type ${badge.class}" style="font-size: 0.6rem; padding: 1px 5px;">${badge.text}</span>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    } catch(e) {
+        container.innerHTML = '<p style="text-align: center; color: #FF3B30; padding: 20px;">Failed to load leaderboard.</p>';
+    }
+}
 
 /* ==================== CALLING SYSTEM WEBRTC + FIREBASE ==================== */
 
@@ -4054,73 +4432,10 @@ document.getElementById('close-dice-btn').addEventListener('click', () => {
             document.body.style.overflow = 'hidden';
         }
 
+    window.openSocialProfile = openSocialProfile;
+    window.loadGoldLeaderboard = loadGoldLeaderboard;
+    window.loadLevelLeaderboard = loadLevelLeaderboard;
     </script>
-
-<!-- ==================== NEW: SOCIAL PROFILE MODAL ==================== -->
-<div id="social-profile-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; z-index: 10001; padding: 20px; overflow-y: auto; backdrop-filter: blur(10px);">
-    <div class="social-profile-card" id="social-profile-card">
-        <div class="profile-banner"></div>
-        <div class="profile-avatar-wrapper">
-            <img id="social-profile-avatar" src="https://via.placeholder.com/110" class="avatar" alt="Profile">
-            <div class="avatar-border-overlay" id="social-avatar-border"></div>
-            <div class="profile-frame-overlay" id="social-profile-frame"></div>
-        </div>
-        <div class="profile-info-section">
-            <h2 id="social-profile-name" style="font-size: 1.4rem; font-weight: 700;">User</h2>
-            <div id="social-profile-badges" class="badges-row"></div>
-            <p id="social-profile-bio" class="profile-bio-text">No bio yet.</p>
-            <div class="profile-stats-grid">
-                <div class="stat-box"><span id="stat-friends">0</span><label>Friends</label></div>
-                <div class="stat-box"><span id="stat-rooms">0</span><label>Rooms</label></div>
-                <div class="stat-box"><span id="stat-messages">0</span><label>Messages</label></div>
-                <div class="stat-box"><span id="stat-calls">0</span><label>Call Hours</label></div>
-            </div>
-            <div class="gold-balance-display">
-                <i class="fas fa-coins"></i>
-                <span id="social-profile-gold">0</span> Gold
-            </div>
-            <div class="account-meta">
-                <span id="social-profile-created">Joined recently</span>
-            </div>
-            <div id="profile-music-container" class="hidden" style="margin: 10px 0;">
-                <audio id="profile-music-player" loop></audio>
-                <button id="profile-music-toggle" class="action-btn-sm btn-pink"><i class="fas fa-music"></i> Play Profile Music</button>
-            </div>
-            <div class="profile-actions-row">
-                <button id="edit-profile-from-view" class="action-btn-sm btn-pink"><i class="fas fa-pen"></i> Edit Profile</button>
-                <button id="open-dice-game-btn" class="action-btn-sm btn-pink"><i class="fas fa-dice"></i> Dice Game</button>
-            </div>
-        </div>
-        <button id="close-social-profile" class="icon-btn" style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%;"><i class="fas fa-times"></i></button>
-    </div>
-</div>
-
-<!-- ==================== NEW: DICE GAME MODAL ==================== -->
-<div id="dice-game-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; z-index: 10002; padding: 20px; backdrop-filter: blur(10px);">
-    <div class="dice-game-card">
-        <h2 style="margin-bottom: 5px;"><i class="fas fa-dice" style="color: var(--pink-primary);"></i> Dice Arena</h2>
-        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Test your luck. Win big.</p>
-        <div class="gold-display-bar">
-            <i class="fas fa-coins"></i>
-            <span id="dice-gold-balance">0</span> Gold
-        </div>
-        <div class="bet-selection">
-            <button class="bet-btn selected" data-bet="100">100</button>
-            <button class="bet-btn" data-bet="500">500</button>
-            <button class="bet-btn" data-bet="1000">1K</button>
-            <button class="bet-btn" data-bet="5000">5K</button>
-        </div>
-        <div class="dice-stage">
-            <div class="dice" id="dice-1"><div class="dice-face">?</div></div>
-        </div>
-        <div class="dice-result" id="dice-result" style="color: var(--text-muted);">Select your bet and roll!</div>
-        <button id="roll-dice-btn" class="main-btn" style="margin-top: 15px; max-width: 200px; margin-left: auto; margin-right: auto;">ROLL DICE</button>
-        <div class="dice-history" id="dice-history">
-            <p style="text-align:center; opacity:0.5; padding: 10px;">No games yet</p>
-        </div>
-        <button id="close-dice-btn" class="icon-btn" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%;"><i class="fas fa-times"></i></button>
-    </div>
-</div>
 
 </body>
 </html>

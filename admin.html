@@ -1285,7 +1285,6 @@
             initQuiz();
             initLeaderboard();
             initReports();
-            initAnnouncements();
 
             // Log access
             logAction("Admin Login", "Accessed dashboard");
@@ -1323,6 +1322,7 @@
             document.getElementById('sidebar').classList.remove('open');
 
             // Refresh data
+            if (section === 'users') refreshUsers();
             if (section === 'leaderboard') refreshLeaderboard();
             if (section === 'reports') loadReports();
             if (section === 'announcements') loadAnnouncements();
@@ -1433,12 +1433,19 @@
 
         // ===== USER MANAGEMENT =====
         function initUsers() {
-            // Real-time users listener
-            const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
+            // Real-time users listener (no orderBy to avoid Firestore index requirement)
+            const q = query(collection(db, "users"));
             onSnapshot(q, (snap) => {
                 allUsers = [];
                 snap.forEach(d => allUsers.push({ uid: d.id, ...d.data() }));
+                // Sort client-side by createdAt desc
+                allUsers.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 renderUsersTable(allUsers);
+            }, (err) => {
+                console.error("Users load error:", err);
+                showToast("Failed to load users. Check Firestore indexes or console.", "error");
+                const tbody = document.getElementById('users-table-body');
+                if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 40px; color: var(--danger);">Error loading users.<br><small style="font-size:0.75rem;">${escapeHtml(err.message)}</small></td></tr>`;
             });
         }
 
@@ -1814,18 +1821,38 @@
         }
 
         window.loadAnnouncements = function() {
-            if (announcementsUnsub) announcementsUnsub();
-            const q = query(collection(db, "announcements"), orderBy("timestamp", "desc"), limit(20));
+            const container = document.getElementById('announcements-list');
+            if (container) {
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading announcements...</p></div>`;
+            }
+
+            if (announcementsUnsub) { announcementsUnsub(); announcementsUnsub = null; }
+
+            const q = query(collection(db, "announcements"), orderBy("timestamp", "desc"), limit(50));
             announcementsUnsub = onSnapshot(q, (snap) => {
-                const container = document.getElementById('announcements-list');
+                if (!container) return;
+
                 if (snap.empty) {
-                    container.innerHTML = `<div class="empty-state"><i class="fas fa-bullhorn"></i><p>No announcements yet.</p></div>`;
+                    container.innerHTML = `<div class="empty-state"><i class="fas fa-bullhorn"></i><p>No announcements yet. Create one above!</p></div>`;
                     return;
                 }
 
-                let html = '';
+                // Collect all docs
+                let items = [];
                 snap.forEach(d => {
                     const data = d.data();
+                    items.push({ id: d.id, ...data });
+                });
+
+                // Sort: pinned first, then by timestamp desc
+                items.sort((a, b) => {
+                    if (a.pinned === true && b.pinned !== true) return -1;
+                    if (a.pinned !== true && b.pinned === true) return 1;
+                    return (b.timestamp || 0) - (a.timestamp || 0);
+                });
+
+                let html = '';
+                items.forEach(data => {
                     const time = data.timestamp ? new Date(data.timestamp).toLocaleString() : '-';
                     const pinned = data.pinned === true;
                     html += `
@@ -1837,13 +1864,19 @@
                             </div>
                             <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 10px;">${escapeHtml(data.body)}</p>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn-icon ${pinned ? '' : 'danger'}" onclick="togglePinAnnouncement('${d.id}', ${!pinned})" title="${pinned ? 'Unpin' : 'Pin'}"><i class="fas fa-thumbtack"></i></button>
-                                <button class="btn-icon danger" onclick="deleteAnnouncement('${d.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                                <button class="btn-icon ${pinned ? '' : 'danger'}" onclick="togglePinAnnouncement('${data.id}', ${!pinned})" title="${pinned ? 'Unpin' : 'Pin'}"><i class="fas fa-thumbtack"></i></button>
+                                <button class="btn-icon danger" onclick="deleteAnnouncement('${data.id}')" title="Delete"><i class="fas fa-trash"></i></button>
                             </div>
                         </div>
                     `;
                 });
                 container.innerHTML = html;
+            }, (err) => {
+                console.error("Announcements load error:", err);
+                if (container) {
+                    container.innerHTML = `<div class="empty-state"><i class="fas fa-circle-exclamation" style="color: var(--danger);"></i><p>Failed to load announcements.<br><small style="font-size:0.75rem;">${escapeHtml(err.message)}</small></p></div>`;
+                }
+                showToast("Announcements load failed: " + err.message, "error");
             });
         };
 
@@ -1902,7 +1935,7 @@
         // ===== UTILITIES =====
         function escapeHtml(text) {
             if (!text) return '';
-            return text.replace(/[&<<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+            return text.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
         }
 
         // Cleanup on unload

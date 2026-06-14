@@ -1743,6 +1743,9 @@ window.openSocialProfile = openSocialProfile;
                         </div>
                     </div>
                     <button id="open-games-btn" class="icon-btn" title="Games"><i class="fas fa-gamepad"></i></button>
+                    <button id="open-store-btn" class="icon-btn" title="Gold Store" onclick="window.location.href='store.html'">
+                        <i class="fas fa-store"></i>
+                    </button>
                     <button id="open-profile-btn" class="icon-btn"><i class="fas fa-user-gear"></i></button>
                     <button id="logout-btn" class="icon-btn"><i class="fas fa-arrow-right-from-bracket"></i></button>
                 </div>
@@ -2520,21 +2523,20 @@ let socialProfileUnsub = null;
         });
 
         // ==================== FIX: Robust auth toggle using direct listener ====================
-        const authToggleLink = document.getElementById("auth-toggle-link");
-        authToggleLink.addEventListener("click", (e) => {
+        // FIX: Robust auth toggle without arguments.callee (strict mode safe)
+        document.getElementById("auth-toggle-text").addEventListener("click", (e) => {
+            const link = document.getElementById("auth-toggle-link");
+            if (!link || !e.composedPath().includes(link)) return;
             e.preventDefault();
             isLoginMode = !isLoginMode;
             if (isLoginMode) {
                 usernameFieldGroup.style.display = "none";
                 authSubmitBtn.innerText = "Login";
                 document.getElementById("auth-toggle-text").innerHTML = `Don't have an account? <a id="auth-toggle-link" href="#" style="color:var(--pink-primary); cursor:pointer; font-weight:bold; text-decoration:none;">Register here</a>`;
-                // Re-attach listener to new element
-                document.getElementById("auth-toggle-link").addEventListener("click", arguments.callee);
             } else {
                 usernameFieldGroup.style.display = "flex";
                 authSubmitBtn.innerText = "Sign Up";
                 document.getElementById("auth-toggle-text").innerHTML = `Already have an account? <a id="auth-toggle-link" href="#" style="color:var(--pink-primary); cursor:pointer; font-weight:bold; text-decoration:none;">Login here</a>`;
-                document.getElementById("auth-toggle-link").addEventListener("click", arguments.callee);
             }
         });
 

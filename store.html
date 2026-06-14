@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MR Chat — Gold Store</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #0B0C10;
+            --bg-sidebar: #12131C;
+            --bg-card: #1F2029;
+            --bg-hover: #252736;
+            --pink-primary: #FF007F;
+            --pink-hover: #E0006C;
+            --pink-light: #FF66B2;
+            --text-main: #FFFFFF;
+            --text-muted: #8F92A1;
+            --glass-border: rgba(255, 0, 127, 0.15);
+            --success: #34C759;
+            --danger: #FF3B30;
+            --warning: #FFD700;
+            --info: #00E6FF;
+            --radius: 16px;
+            --radius-sm: 12px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+        .hidden { display: none !important; }
+
+        .store-header {
+            position: sticky; top: 0; z-index: 100; height: 64px; background: var(--bg-sidebar);
+            border-bottom: 1px solid var(--glass-border); display: flex; align-items: center;
+            justify-content: space-between; padding: 0 20px; gap: 12px;
+        }
+        .back-btn {
+            display: flex; align-items: center; gap: 8px; background: transparent;
+            border: 1px solid var(--glass-border); color: var(--text-muted); padding: 8px 14px;
+            border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; white-space: nowrap;
+        }
+        .back-btn:hover { border-color: var(--pink-primary); color: var(--pink-primary); }
+        .store-brand { font-size: 1.1rem; font-weight: 700; color: var(--pink-primary); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+        .gold-balance-header {
+            display: flex; align-items: center; gap: 6px; background: rgba(255, 215, 0, 0.1);
+            color: var(--warning); padding: 8px 14px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; white-space: nowrap;
+        }
+
+        .store-categories {
+            display: flex; gap: 8px; padding: 16px 20px; overflow-x: auto;
+            border-bottom: 1px solid var(--glass-border); scrollbar-width: none;
+        }
+        .store-categories::-webkit-scrollbar { display: none; }
+        .cat-btn {
+            padding: 8px 16px; border-radius: 20px; border: 1px solid var(--glass-border); background: transparent;
+            color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+        }
+        .cat-btn:hover { border-color: var(--pink-primary); color: var(--text-main); }
+        .cat-btn.active { background: var(--pink-primary); color: white; border-color: var(--pink-primary); }
+
+        .store-grid {
+            padding: 20px; display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 16px; max-width: 1000px; margin: 0 auto;
+        }
+
+        .store-card {
+            background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius);
+            padding: 20px 14px; display: flex; flex-direction: column; align-items: center; text-align: center;
+            position: relative; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; min-height: 240px;
+        }
+        .store-card:hover { transform: translateY(-4px); border-color: var(--pink-primary); box-shadow: 0 8px 24px rgba(255, 0, 127, 0.15); }
+        .store-card.owned { border-color: rgba(52, 199, 89, 0.4); }
+        .store-card.equipped { border-color: var(--pink-primary); box-shadow: 0 0 20px rgba(255, 0, 127, 0.25); }
+
+        .store-card .owned-badge {
+            position: absolute; top: 10px; right: 10px; background: var(--success); color: white;
+            font-size: 0.6rem; font-weight: 700; padding: 3px 8px; border-radius: 20px; letter-spacing: 0.5px;
+        }
+        .store-card .equipped-badge {
+            position: absolute; top: 10px; right: 10px; background: var(--pink-primary); color: white;
+            font-size: 0.6rem; font-weight: 700; padding: 3px 8px; border-radius: 20px; letter-spacing: 0.5px;
+        }
+
+        .card-icon {
+            width: 60px; height: 60px; border-radius: 50%; border: 2px solid currentColor;
+            display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 14px;
+            background: rgba(255,255,255,0.03);
+        }
+        .card-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 6px; line-height: 1.2; }
+        .card-desc {
+            font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 14px;
+            min-height: 2.8em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .card-meta {
+            display: flex; gap: 6px; justify-content: center; align-items: center; margin-bottom: 16px; flex-wrap: wrap;
+        }
+        .rarity-badge {
+            font-size: 0.65rem; padding: 3px 8px; border-radius: 4px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .price-tag { font-size: 0.9rem; color: var(--warning); font-weight: 700; display: flex; align-items: center; gap: 4px; }
+        .price-tag.free { color: var(--success); }
+
+        .card-actions { width: 100%; margin-top: auto; }
+        .card-actions button {
+            width: 100%; padding: 10px; border-radius: 10px; border: none; font-size: 0.85rem;
+            font-weight: 600; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-buy { background: var(--pink-primary); color: white; }
+        .btn-buy:hover { background: var(--pink-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255, 0, 127, 0.3); }
+        .btn-buy.free { background: var(--success); }
+        .btn-buy.free:hover { background: #2eb350; }
+        .btn-equip { background: transparent; border: 1px solid var(--pink-primary) !important; color: var(--pink-primary); }
+        .btn-equip:hover { background: rgba(255, 0, 127, 0.1); }
+        .btn-equipped { background: var(--success); color: white; opacity: 0.95; }
+        .btn-equipped:hover { opacity: 1; }
+        .btn-login {
+            background: var(--bg-hover); border: 1px solid var(--glass-border) !important;
+            color: var(--text-muted); font-size: 0.8rem;
+        }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(6px);
+            z-index: 20000; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s ease-out;
+        }
+        .modal-card {
+            background: var(--bg-sidebar); border: 1px solid var(--glass-border); border-radius: var(--radius);
+            width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6); animation: dropFade 0.25s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes dropFade { from { opacity: 0; transform: scale(0.96) translateY(-10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .modal-header { padding: 24px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+        .modal-header h3 { font-size: 1.1rem; font-weight: 700; }
+        .modal-close {
+            background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;
+            width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .modal-close:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
+        .modal-body { padding: 20px 24px; }
+        .modal-footer { padding: 0 24px 24px; display: flex; justify-content: flex-end; gap: 10px; }
+        .btn-secondary {
+            padding: 10px 20px; background: var(--bg-card); border: 1px solid var(--glass-border);
+            border-radius: var(--radius-sm); color: var(--text-main); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-secondary:hover { border-color: var(--pink-primary); color: var(--pink-primary); }
+        .btn-primary {
+            padding: 10px 20px; background: var(--pink-primary); border: none; border-radius: var(--radius-sm);
+            color: white; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: inline-flex;
+            align-items: center; gap: 8px; transition: all 0.2s;
+        }
+        .btn-primary:hover { background: var(--pink-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255, 0, 127, 0.3); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 30000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast {
+            background: var(--bg-sidebar); border: 1px solid var(--glass-border); border-left: 4px solid var(--pink-primary);
+            color: var(--text-main); padding: 14px 20px; border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 500;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4); animation: slideIn 0.3s ease-out; pointer-events: auto;
+            max-width: 360px; display: flex; align-items: center; gap: 10px;
+        }
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.warning { border-left-color: var(--warning); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        @media (max-width: 480px) {
+            .store-grid { grid-template-columns: repeat(2, 1fr); padding: 16px; gap: 12px; }
+            .store-header { padding: 0 14px; }
+            .back-label { display: none; }
+            .store-brand { font-size: 1rem; }
+            .gold-balance-header { padding: 6px 10px; font-size: 0.85rem; }
+            .card-icon { width: 50px; height: 50px; font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="store-app">
+        <header class="store-header">
+            <button class="back-btn" onclick="window.location.href='index.html'">
+                <i class="fas fa-arrow-left"></i> <span class="back-label">Chat</span>
+            </button>
+            <div class="store-brand"><i class="fas fa-gem"></i> Gold Store</div>
+            <div class="gold-balance-header"><i class="fas fa-coins"></i> <span id="header-gold">0</span></div>
+        </header>
+
+        <div class="store-categories">
+            <button class="cat-btn active" data-cat="all" onclick="filterCategory('all')">All Items</button>
+            <button class="cat-btn" data-cat="frame" onclick="filterCategory('frame')">Frames</button>
+            <button class="cat-btn" data-cat="border" onclick="filterCategory('border')">Borders</button>
+            <button class="cat-btn" data-cat="theme" onclick="filterCategory('theme')">Themes</button>
+            <button class="cat-btn" data-cat="badge" onclick="filterCategory('badge')">Badges</button>
+        </div>
+
+        <main class="store-grid" id="store-grid">
+            <!-- Items will appear here instantly -->
+        </main>
+    </div>
+
+    <div id="purchase-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Confirm Purchase</h3>
+                <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn-primary" id="confirm-purchase-btn" onclick="confirmPurchase()">Buy Now</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCr9Bfn4Ep-qw9JFkguyak00dsN90GSgRY",
+            authDomain: "mr-chatting-ff2b6.firebaseapp.com",
+            projectId: "mr-chatting-ff2b6",
+            storageBucket: "mr-chatting-ff2b6.firebasestorage.app",
+            messagingSenderId: "710151594912",
+            appId: "1:710151594912:web:bc2861e503db1481223ac5",
+            measurementId: "G-NNXG57V3KL"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let userData = null;
+        let ownedIds = new Set();
+        let equipped = {};
+        let selectedItem = null;
+        let currentFilter = 'all';
+
+        // ===== HARDCODED CATALOG (Instant, no Firestore needed) =====
+        const CATALOG = [
+            { id: 'frame_common', name: 'Common Frame', price: 0, type: 'frame', value: 'common', rarity: 'common', description: 'A simple steel frame for your avatar.', icon: 'fa-square' },
+            { id: 'frame_rare', name: 'Rare Frame', price: 500, type: 'frame', value: 'rare', rarity: 'rare', description: 'Glowing cyan frame with subtle pulse.', icon: 'fa-gem' },
+            { id: 'frame_epic', name: 'Epic Frame', price: 2000, type: 'frame', value: 'epic', rarity: 'epic', description: 'Rotating prismatic border. Epic rarity.', icon: 'fa-star' },
+            { id: 'frame_legendary', name: 'Legendary Frame', price: 5000, type: 'frame', value: 'legendary', rarity: 'legendary', description: 'Golden legendary aura. Maximum prestige.', icon: 'fa-crown' },
+            { id: 'border_common', name: 'Common Border', price: 0, type: 'border', value: 'common', rarity: 'common', description: 'Standard grey avatar border.', icon: 'fa-circle' },
+            { id: 'border_rare', name: 'Rare Border', price: 500, type: 'border', value: 'rare', rarity: 'rare', description: 'Cyan glowing border for rare users.', icon: 'fa-circle-dot' },
+            { id: 'border_epic', name: 'Epic Border', price: 2000, type: 'border', value: 'epic', rarity: 'epic', description: 'Animated gradient border.', icon: 'fa-circle-nodes' },
+            { id: 'border_legendary', name: 'Legendary Border', price: 5000, type: 'border', value: 'legendary', rarity: 'legendary', description: 'Golden border with radiant glow.', icon: 'fa-sun' },
+            { id: 'theme_blackpink', name: 'Black Pink', price: 0, type: 'theme', value: 'blackpink', rarity: 'common', description: 'Default MR Chat theme.', icon: 'fa-heart' },
+            { id: 'theme_dark', name: 'Dark Matter', price: 1000, type: 'theme', value: 'dark', rarity: 'rare', description: 'Pure dark aesthetic.', icon: 'fa-moon' },
+            { id: 'theme_neon', name: 'Neon City', price: 1500, type: 'theme', value: 'neon', rarity: 'rare', description: 'Cyber-cyan neon glow.', icon: 'fa-bolt' },
+            { id: 'theme_cyberpunk', name: 'Cyberpunk', price: 2500, type: 'theme', value: 'cyberpunk', rarity: 'epic', description: 'Purple cyber-dystopian vibe.', icon: 'fa-robot' },
+            { id: 'theme_ocean', name: 'Deep Ocean', price: 1500, type: 'theme', value: 'ocean', rarity: 'rare', description: 'Underwater blue gradient.', icon: 'fa-water' },
+            { id: 'theme_fire', name: 'Inferno', price: 1500, type: 'theme', value: 'fire', rarity: 'rare', description: 'Burning red and orange.', icon: 'fa-fire' },
+            { id: 'badge_premium', name: 'Premium Badge', price: 5000, type: 'badge', value: 'premium', rarity: 'epic', description: 'Shows you are a premium supporter.', icon: 'fa-gem' },
+            { id: 'badge_winner', name: 'Champion Badge', price: 3000, type: 'badge', value: 'winner', rarity: 'legendary', description: 'For event winners and top players.', icon: 'fa-trophy' },
+            { id: 'badge_rich', name: 'Gold Hoarder', price: 10000, type: 'badge', value: 'rich', rarity: 'legendary', description: 'Proof of incredible wealth.', icon: 'fa-coins' }
+        ];
+
+        // ===== RENDER (Called immediately, no waiting) =====
+        function renderStore() {
+            const grid = document.getElementById('store-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const items = currentFilter === 'all' ? CATALOG : CATALOG.filter(i => i.type === currentFilter);
+
+            if (!items || items.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-box-open" style="font-size:2rem;margin-bottom:10px;opacity:0.5;"></i><p>No items found.</p></div>';
+                return;
+            }
+
+            items.forEach(item => {
+                const isOwned = ownedIds.has(item.id);
+                const isEquipped = item.type === 'badge' ? equipped[item.id] === true : equipped[item.type] === item.id;
+                const rarityColor = getRarityColor(item.rarity);
+
+                const card = document.createElement('div');
+                card.className = 'store-card' + (isOwned ? ' owned' : '') + (isEquipped ? ' equipped' : '');
+                card.id = 'card-' + item.id;
+
+                let badgeHTML = '';
+                if (isEquipped) badgeHTML = '<span class="equipped-badge">EQUIPPED</span>';
+                else if (isOwned) badgeHTML = '<span class="owned-badge">OWNED</span>';
+
+                let buttonHTML = '';
+                if (!currentUser) {
+                    buttonHTML = `<button class="btn-login" onclick="window.location.href='index.html'"><i class="fas fa-lock"></i> Login to Buy</button>`;
+                } else if (isOwned) {
+                    if (isEquipped) {
+                        buttonHTML = `<button class="btn-equipped" onclick="unequipItem('${item.id}')"><i class="fas fa-check"></i> Equipped</button>`;
+                    } else {
+                        buttonHTML = `<button class="btn-equip" onclick="equipItem('${item.id}')"><i class="fas fa-wand-magic-sparkles"></i> Equip</button>`;
+                    }
+                } else {
+                    if (item.price === 0) {
+                        buttonHTML = `<button class="btn-buy free" onclick="openPurchaseModal('${item.id}')"><i class="fas fa-gift"></i> Claim Free</button>`;
+                    } else {
+                        buttonHTML = `<button class="btn-buy" onclick="openPurchaseModal('${item.id}')"><i class="fas fa-shopping-cart"></i> ${item.price.toLocaleString()}</button>`;
+                    }
+                }
+
+                card.innerHTML = `
+                    ${badgeHTML}
+                    <div class="card-icon" style="color: ${rarityColor}; border-color: ${rarityColor};">
+                        <i class="fas ${item.icon}"></i>
+                    </div>
+                    <div class="card-name">${escapeHtml(item.name)}</div>
+                    <div class="card-desc">${escapeHtml(item.description)}</div>
+                    <div class="card-meta">
+                        <span class="rarity-badge" style="background: ${rarityColor}20; color: ${rarityColor}; border: 1px solid ${rarityColor}40;">
+                            ${item.rarity.toUpperCase()}
+                        </span>
+                        ${item.price > 0 
+                            ? `<span class="price-tag"><i class="fas fa-coins"></i> ${item.price.toLocaleString()}</span>`
+                            : `<span class="price-tag free">FREE</span>`
+                        }
+                    </div>
+                    <div class="card-actions">${buttonHTML}</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function getRarityColor(rarity) {
+            switch (rarity) {
+                case 'common': return '#888888';
+                case 'rare': return '#00E6FF';
+                case 'epic': return '#9D00FF';
+                case 'legendary': return '#FFD700';
+                default: return '#FFFFFF';
+            }
+        }
+
+        // ===== CATEGORY FILTER =====
+        window.filterCategory = function(cat) {
+            currentFilter = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.cat === cat);
+            });
+            renderStore();
+        };
+
+        // ===== PURCHASE =====
+        window.openPurchaseModal = function(itemId) {
+            if (!currentUser) { showToast('Please login first', 'warning'); return; }
+            const item = CATALOG.find(i => i.id === itemId);
+            if (!item) return;
+            if (ownedIds.has(item.id)) { showToast('You already own this item.', 'warning'); return; }
+
+            selectedItem = item;
+            const modalBody = document.getElementById('modal-body');
+            modalBody.innerHTML = `
+                <div style="text-align:center; margin-bottom: 20px;">
+                    <div style="font-size: 3rem; color: ${getRarityColor(item.rarity)}; margin-bottom: 10px;">
+                        <i class="fas ${item.icon}"></i>
+                    </div>
+                    <h2 style="margin-bottom: 6px;">${escapeHtml(item.name)}</h2>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">${escapeHtml(item.description)}</p>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border);">
+                    <span style="color: var(--text-muted);">Price</span>
+                    <span style="font-weight: 700; color: #FFD700;"><i class="fas fa-coins"></i> ${item.price.toLocaleString()}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 12px 0;">
+                    <span style="color: var(--text-muted);">Your Balance</span>
+                    <span style="font-weight: 700; color: #FFD700;"><i class="fas fa-coins"></i> ${(userData?.gold || 0).toLocaleString()}</span>
+                </div>
+            `;
+
+            const btn = document.getElementById('confirm-purchase-btn');
+            if ((userData?.gold || 0) < item.price) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-lock"></i> Not Enough Gold';
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check"></i> Confirm Purchase';
+            }
+            document.getElementById('purchase-modal').classList.remove('hidden');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('purchase-modal').classList.add('hidden');
+            selectedItem = null;
+        };
+
+        window.confirmPurchase = async function() {
+            if (!selectedItem || !currentUser) return;
+            const item = selectedItem;
+
+            if (ownedIds.has(item.id)) { showToast('Already owned!', 'warning'); closeModal(); return; }
+            if ((userData?.gold || 0) < item.price) { showToast('Insufficient Gold balance.', 'error'); closeModal(); return; }
+
+            try {
+                const userRef = doc(db, 'users', currentUser.uid);
+                const newOwned = Array.from(ownedIds);
+                newOwned.push(item.id);
+
+                await updateDoc(userRef, { gold: increment(-item.price), ownedItems: newOwned });
+
+                // Auto-equip if slot empty
+                const hasEquippedOfType = item.type === 'badge'
+                    ? (userData?.badges || []).includes(item.value)
+                    : !!equipped[item.type];
+
+                if (!hasEquippedOfType) {
+                    const updates = {};
+                    if (item.type === 'frame') updates.profileFrame = item.value;
+                    if (item.type === 'border') updates.avatarBorder = item.value;
+                    if (item.type === 'theme') updates.profileTheme = item.value;
+                    if (item.type === 'badge') {
+                        const currentBadges = new Set(userData?.badges || []);
+                        currentBadges.add(item.value);
+                        updates.badges = Array.from(currentBadges);
+                    }
+                    if (Object.keys(updates).length > 0) {
+                        await updateDoc(userRef, updates);
+                        Object.assign(userData, updates);
+                    }
+                }
+
+                ownedIds.add(item.id);
+                userData.gold = (userData.gold || 0) - item.price;
+                userData.ownedItems = newOwned;
+                deriveEquippedState();
+                updateGoldDisplay();
+                renderStore();
+
+                showToast(`Purchased ${item.name}!`, 'success');
+                closeModal();
+            } catch (e) {
+                console.error(e);
+                showToast('Purchase failed. Try again.', 'error');
+            }
+        };
+
+        // ===== EQUIP / UNEQUIP =====
+        window.equipItem = async function(itemId) {
+            if (!currentUser) return;
+            const item = CATALOG.find(i => i.id === itemId);
+            if (!item || !ownedIds.has(item.id)) return;
+
+            try {
+                const userRef = doc(db, 'users', currentUser.uid);
+                const updates = {};
+                if (item.type === 'frame') updates.profileFrame = item.value;
+                else if (item.type === 'border') updates.avatarBorder = item.value;
+                else if (item.type === 'theme') updates.profileTheme = item.value;
+                else if (item.type === 'badge') {
+                    const currentBadges = new Set(userData?.badges || []);
+                    currentBadges.add(item.value);
+                    updates.badges = Array.from(currentBadges);
+                }
+
+                await updateDoc(userRef, updates);
+                Object.assign(userData, updates);
+                deriveEquippedState();
+                renderStore();
+                showToast(`${item.name} equipped!`, 'success');
+            } catch (e) {
+                showToast('Equip failed.', 'error');
+            }
+        };
+
+        window.unequipItem = async function(itemId) {
+            if (!currentUser) return;
+            const item = CATALOG.find(i => i.id === itemId);
+            if (!item) return;
+
+            try {
+                const userRef = doc(db, 'users', currentUser.uid);
+                const updates = {};
+                if (item.type === 'frame') updates.profileFrame = 'none';
+                else if (item.type === 'border') updates.avatarBorder = 'none';
+                else if (item.type === 'theme') updates.profileTheme = 'blackpink';
+                else if (item.type === 'badge') {
+                    const currentBadges = new Set(userData?.badges || []);
+                    currentBadges.delete(item.value);
+                    updates.badges = Array.from(currentBadges);
+                }
+
+                await updateDoc(userRef, updates);
+                Object.assign(userData, updates);
+                deriveEquippedState();
+                renderStore();
+                showToast('Item unequipped.', 'info');
+            } catch (e) {
+                showToast('Unequip failed.', 'error');
+            }
+        };
+
+        // ===== UTILITIES =====
+        function updateGoldDisplay() {
+            const el = document.getElementById('header-gold');
+            if (el) el.innerText = (userData?.gold || 0).toLocaleString();
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            const icons = { info: 'fa-info-circle', success: 'fa-check-circle', error: 'fa-circle-xmark', warning: 'fa-triangle-exclamation' };
+            toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 4000);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/[&<<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        }
+
+        function deriveEquippedState() {
+            equipped = {};
+            const findId = (type, value) => CATALOG.find(i => i.type === type && i.value === value)?.id;
+            if (userData?.profileFrame && userData.profileFrame !== 'none') equipped.frame = findId('frame', userData.profileFrame);
+            if (userData?.avatarBorder && userData.avatarBorder !== 'none') equipped.border = findId('border', userData.avatarBorder);
+            if (userData?.profileTheme) equipped.theme = findId('theme', userData.profileTheme);
+            (userData?.badges || []).forEach(badgeValue => {
+                const item = CATALOG.find(i => i.type === 'badge' && i.value === badgeValue);
+                if (item) equipped[item.id] = true;
+            });
+        }
+
+        // ===== AUTH (Only updates state, items already rendered) =====
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                currentUser = null;
+                userData = null;
+                ownedIds = new Set();
+                equipped = {};
+                updateGoldDisplay();
+                renderStore();
+                return;
+            }
+
+            currentUser = user;
+            try {
+                const snap = await getDoc(doc(db, 'users', user.uid));
+                if (snap.exists()) {
+                    userData = snap.data();
+                    ownedIds = new Set(userData.ownedItems || []);
+                    deriveEquippedState();
+                    updateGoldDisplay();
+                }
+            } catch (e) {
+                console.error('Auth load error:', e);
+            }
+            renderStore();
+        });
+
+        // ===== INSTANT RENDER ON LOAD (No waiting) =====
+        renderStore();
+    </script>
+</body>
+</html>
